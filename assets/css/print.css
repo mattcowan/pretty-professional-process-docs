@@ -1,0 +1,90 @@
+/* Report Design Language — print/PDF styles. Contract: report-design.md.
+   Include after report.css, wrapped in @media print or via media="print". */
+
+@page {
+	margin: 20mm;
+}
+
+@media print {
+	body {
+		font-size: 10.5pt;
+		line-height: 1.5;
+		color: #000;
+		background: #fff;
+	}
+
+	.no-print,
+	.skip-link,
+	.btn {
+		display: none !important;
+	}
+
+	.report-shell {
+		display: block;
+		max-width: none;
+		padding: 0;
+	}
+
+	.report-toc {
+		position: static;
+		max-height: none;
+		overflow: visible;
+		background: #fff;
+	}
+
+	a {
+		color: #000;
+	}
+
+	/* Print full URLs for external links; skip same-page anchors */
+	a[href^="http"]::after {
+		content: " (" attr(href) ")";
+		font-size: 0.85em;
+		word-break: break-all;
+	}
+
+	h1,
+	h2,
+	h3,
+	h4 {
+		break-after: avoid-page;
+	}
+
+	section,
+	tr,
+	figure,
+	.callout,
+	blockquote,
+	pre {
+		break-inside: avoid-page;
+	}
+
+	/* Long sections may still break; tables repeat headers natively */
+	thead {
+		display: table-header-group;
+	}
+
+	thead th,
+	.report-toc,
+	.callout,
+	code,
+	pre {
+		background: #fff !important;
+	}
+
+	.table-scroll {
+		overflow: visible;
+	}
+}
+
+/* PPPD plugin additions */
+@media print {
+	/* Interactive-only blocks (comment forms, upload slots) never print;
+	   the .no-print class on their wrappers already hides them — this is a
+	   belt-and-braces guard for themes that strip classes. */
+	.pppd-comment-form,
+	.pppd-upload-form,
+	.pppd-notice {
+		display: none !important;
+	}
+}
