@@ -463,6 +463,22 @@ function pppd_register_meta() {
 		)
 	);
 
+	// User ID of the reviewer who approved or rejected the change. Stamped by
+	// pppd_approve_change()/pppd_reject_change() and surfaced as reviewed_by in
+	// the change summary.
+	register_post_meta(
+		'pppd_change',
+		'_pppd_reviewed_by',
+		array_merge(
+			$common,
+			array(
+				'type'              => 'integer',
+				'sanitize_callback' => 'absint',
+				'show_in_rest'      => true,
+			)
+		)
+	);
+
 	// --- pppd_report ---
 	register_post_meta(
 		'pppd_report',

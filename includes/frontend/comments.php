@@ -85,7 +85,7 @@ function pppd_comment_redirect( $location, $comment ) {
 		return $location;
 	}
 
-	return $permalink . '#' . $post->post_name;
+	return $permalink . '#' . pppd_section_anchor( $post );
 }
 
 /**

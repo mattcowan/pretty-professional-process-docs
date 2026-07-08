@@ -48,7 +48,7 @@ function pppd_upload_redirect( $section, $status ) {
 					'pppd_section' => (int) $section->ID,
 				),
 				$permalink
-			) . '#' . $section->post_name;
+			) . '#' . pppd_section_anchor( $section );
 		}
 	}
 

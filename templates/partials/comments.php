@@ -62,7 +62,7 @@ $pppd_comments = get_comments(
 		</form>
 	<?php elseif ( ! is_user_logged_in() ) : ?>
 		<p>
-			<a href="<?php echo esc_url( wp_login_url( get_permalink( $pppd_report ) . '#' . $pppd_section->post_name ) ); ?>">
+			<a href="<?php echo esc_url( wp_login_url( get_permalink( $pppd_report ) . '#' . pppd_section_anchor( $pppd_section ) ) ); ?>">
 				<?php esc_html_e( 'Log in to join the discussion.', 'pretty-professional-process-docs' ); ?>
 			</a>
 		</p>

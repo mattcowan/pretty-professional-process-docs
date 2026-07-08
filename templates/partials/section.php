@@ -14,7 +14,7 @@ defined( 'ABSPATH' ) || exit;
 $pppd_heading_level = min( 2 + $pppd_depth, 4 );
 $pppd_heading_tag   = 'h' . $pppd_heading_level;
 $pppd_sub_level     = min( $pppd_heading_level + 1, 6 );
-$pppd_anchor        = $pppd_section->post_name;
+$pppd_anchor        = pppd_section_anchor( $pppd_section );
 $pppd_is_requirement = ( 'requirement' === pppd_get_section_term_slug( $pppd_section, 'pppd_section_type' ) );
 ?>
 <section id="<?php echo esc_attr( $pppd_anchor ); ?>" class="pppd-section pppd-section--depth-<?php echo esc_attr( (string) $pppd_depth ); ?>" aria-labelledby="<?php echo esc_attr( $pppd_anchor . '-heading' ); ?>">

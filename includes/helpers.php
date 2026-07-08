@@ -194,6 +194,25 @@ function pppd_get_drift_items( $drift ) {
 }
 
 /**
+ * Build the DOM anchor (fragment id) for a section.
+ *
+ * Section anchors are prefixed with `pppd-section-` so a section slug can never
+ * collide with the report template's fixed IDs (executive-summary,
+ * drift-summary), which would otherwise produce duplicate IDs and break the
+ * TOC, skip link, and aria-labelledby targeting. Every place that emits or
+ * links to a section anchor MUST route through this helper so the id used in
+ * markup and the fragment used in links stay in lockstep.
+ *
+ * @since 0.1.0
+ *
+ * @param WP_Post $section Section post.
+ * @return string Anchor id (unescaped; escape at the point of output).
+ */
+function pppd_section_anchor( $section ) {
+	return 'pppd-section-' . $section->post_name;
+}
+
+/**
  * Render a nested <ol> table-of-contents list for a grouped section tree.
  *
  * Escapes everything it prints.
@@ -212,7 +231,7 @@ function pppd_render_toc_list( $grouped, $parent = 0 ) {
 	foreach ( $grouped[ $parent ] as $section ) {
 		printf(
 			'<li><a href="#%1$s">%2$s</a>',
-			esc_attr( $section->post_name ),
+			esc_attr( pppd_section_anchor( $section ) ),
 			esc_html( get_the_title( $section ) )
 		);
 
