@@ -520,11 +520,18 @@ function pppd_register_registry_fields() {
 function pppd_sync_registry_terms() {
 	$registry = pppd_registry();
 
+	// Sorted so the gate is registration-order-independent: extensions may
+	// register the same type set in a different order between requests.
+	$section_slugs = array_keys( $registry->get_section_types() );
+	$report_slugs  = array_keys( $registry->get_report_types() );
+	sort( $section_slugs );
+	sort( $report_slugs );
+
 	$signature = md5(
 		(string) wp_json_encode(
 			array(
-				'section' => array_keys( $registry->get_section_types() ),
-				'report'  => array_keys( $registry->get_report_types() ),
+				'section' => $section_slugs,
+				'report'  => $report_slugs,
 			)
 		)
 	);

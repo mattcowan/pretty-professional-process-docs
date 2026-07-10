@@ -337,15 +337,23 @@ function pppd_mark_github_pushed( $section_id, $issue_url, $issue_number ) {
 		return new WP_Error( 'pppd_bad_issue_url', __( 'A valid issue URL is required.', 'pretty-professional-process-docs' ), array( 'status' => 400 ) );
 	}
 
+	// GitHub issue numbers start at 1; recording 0 would leave the section in
+	// an unusable pushed state (and, being idempotent, unrepairable via REST).
+	$issue_number = absint( $issue_number );
+
+	if ( $issue_number < 1 ) {
+		return new WP_Error( 'pppd_bad_issue_number', __( 'A positive issue number is required.', 'pretty-professional-process-docs' ), array( 'status' => 400 ) );
+	}
+
 	update_post_meta( $section->ID, '_pppd_github_status', 'pushed' );
 	update_post_meta( $section->ID, '_pppd_github_issue_url', $issue_url );
-	update_post_meta( $section->ID, '_pppd_github_issue_number', absint( $issue_number ) );
+	update_post_meta( $section->ID, '_pppd_github_issue_number', $issue_number );
 	update_post_meta( $section->ID, '_pppd_github_pushed_at', current_time( 'mysql', true ) );
 
 	$item                 = pppd_build_github_queue_item( $section );
 	$item['status']       = 'pushed';
 	$item['issue_url']    = $issue_url;
-	$item['issue_number'] = absint( $issue_number );
+	$item['issue_number'] = $issue_number;
 
 	return $item;
 }

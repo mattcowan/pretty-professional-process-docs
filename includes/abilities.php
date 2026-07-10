@@ -185,7 +185,10 @@ function pppd_register_abilities() {
 				'properties' => array(
 					'section_id'   => array( 'type' => 'integer' ),
 					'issue_url'    => array( 'type' => 'string' ),
-					'issue_number' => array( 'type' => 'integer' ),
+					'issue_number' => array(
+						'type'    => 'integer',
+						'minimum' => 1,
+					),
 				),
 				'required'   => array( 'section_id', 'issue_url', 'issue_number' ),
 			),

@@ -128,6 +128,31 @@ class Test_Github_Queue extends WP_UnitTestCase {
 		$this->assertSame( 0, rest_get_server()->dispatch( new WP_REST_Request( 'GET', '/pppd/v1/github/queue' ) )->get_data()['count'] );
 	}
 
+	public function test_pushed_requires_a_positive_issue_number() {
+		list( , $section_id ) = $this->fixture();
+		pppd_sign_off_section( $section_id, self::factory()->user->create() );
+		pppd_queue_section_for_github( $section_id, 1 );
+
+		$result = pppd_mark_github_pushed( $section_id, 'https://github.com/mattcowan/example-app/issues/0', 0 );
+
+		$this->assertWPError( $result );
+		$this->assertSame( 'pppd_bad_issue_number', $result->get_error_code() );
+		$this->assertSame( 'queued', get_post_meta( $section_id, '_pppd_github_status', true ), 'A rejected push-back must leave the item queued' );
+
+		// The REST layer also rejects it, at schema validation.
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'pppd_agent' ) ) );
+
+		$push = new WP_REST_Request( 'POST', '/pppd/v1/github/queue/' . $section_id . '/pushed' );
+		$push->set_body_params(
+			array(
+				'issue_url'    => 'https://github.com/mattcowan/example-app/issues/0',
+				'issue_number' => 0,
+			)
+		);
+
+		$this->assertSame( 400, rest_get_server()->dispatch( $push )->get_status() );
+	}
+
 	public function test_queue_rest_surface_rejects_clients() {
 		wp_set_current_user( self::factory()->user->create( array( 'role' => 'subscriber' ) ) );
 

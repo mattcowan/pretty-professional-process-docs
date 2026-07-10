@@ -68,6 +68,7 @@ class PPPD_GitHub_Controller {
 					'issue_number' => array(
 						'type'              => 'integer',
 						'required'          => true,
+						'minimum'           => 1,
 						'sanitize_callback' => 'absint',
 					),
 				),
