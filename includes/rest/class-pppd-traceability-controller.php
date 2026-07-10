@@ -52,13 +52,14 @@ class PPPD_Traceability_Controller {
 	}
 
 	/**
-	 * Permission check: reader access plus a real report.
+	 * Permission check: team-only. Traceability rows carry internal fields
+	 * (code/test refs), so like drift they are never client-readable.
 	 *
 	 * @param WP_REST_Request $request Request.
 	 * @return true|WP_Error
 	 */
 	public function permission_check( $request ) {
-		if ( ! current_user_can( 'read' ) ) {
+		if ( ! current_user_can( 'edit_pppd_reports' ) ) {
 			return new WP_Error(
 				'pppd_forbidden',
 				__( 'You are not allowed to read traceability data.', 'pretty-professional-process-docs' ),
@@ -100,7 +101,7 @@ class PPPD_Traceability_Controller {
 		foreach ( pppd_get_report_sections( $report_id ) as $entry ) {
 			$section = $entry['post'];
 
-			if ( 'requirement' !== pppd_get_section_term_slug( $section, 'pppd_section_type' ) ) {
+			if ( ! pppd_section_type_supports( $section, 'traceable' ) ) {
 				continue;
 			}
 
@@ -109,7 +110,7 @@ class PPPD_Traceability_Controller {
 			$code_refs  = get_post_meta( $section->ID, '_pppd_code_refs', true );
 			$test_refs  = get_post_meta( $section->ID, '_pppd_test_refs', true );
 
-			$rows[] = array(
+			$row = array(
 				'req_id'           => $req_id,
 				'title'            => get_the_title( $section ),
 				'status'           => pppd_get_section_term_slug( $section, 'pppd_status' ),
@@ -118,7 +119,21 @@ class PPPD_Traceability_Controller {
 				'test_refs'        => is_array( $test_refs ) ? $test_refs : array(),
 				'drift_verdict'    => ( '' !== $req_id && isset( $drift_verdicts[ $req_id ] ) ) ? $drift_verdicts[ $req_id ] : 'none',
 				'section_id'       => (int) $section->ID,
+				// Additive (contract v1): the section's registered type slug.
+				'type'             => pppd_get_section_type_slug( $section ),
 			);
+
+			/**
+			 * Filter a traceability matrix row before it is returned/exported.
+			 *
+			 * Keys may be added; removing or renaming the contract-v1 keys
+			 * breaks the frd skill's drift/export flows.
+			 *
+			 * @param array<string, mixed> $row       Row data.
+			 * @param WP_Post              $section   Section post.
+			 * @param int                  $report_id Report post ID.
+			 */
+			$rows[] = apply_filters( 'pppd_traceability_row', $row, $section, $report_id );
 		}
 
 		return $rows;
@@ -157,12 +172,14 @@ class PPPD_Traceability_Controller {
 	 * @return string
 	 */
 	protected function rows_to_csv( $rows ) {
+		// Contract v1 columns; 'type' is appended last so existing column
+		// positions never shift for consumers indexing by position.
 		$lines   = array();
 		$lines[] = implode(
 			',',
 			array_map(
 				array( $this, 'csv_cell' ),
-				array( 'req_id', 'title', 'status', 'acceptance_count', 'code_refs', 'test_refs', 'drift_verdict', 'section_id' )
+				array( 'req_id', 'title', 'status', 'acceptance_count', 'code_refs', 'test_refs', 'drift_verdict', 'section_id', 'type' )
 			)
 		);
 
@@ -180,6 +197,7 @@ class PPPD_Traceability_Controller {
 						implode( '; ', $row['test_refs'] ),
 						$row['drift_verdict'],
 						(string) $row['section_id'],
+						isset( $row['type'] ) ? (string) $row['type'] : '',
 					)
 				)
 			);

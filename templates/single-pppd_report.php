@@ -15,7 +15,9 @@ while ( have_posts() ) :
 	the_post();
 
 	$pppd_report        = get_post();
-	$pppd_section_posts = pppd_get_report_section_posts( $pppd_report->ID );
+	// Team-only sections are stripped for client viewers before grouping, so
+	// the TOC, section loop, and counts all agree on what is visible.
+	$pppd_section_posts = pppd_filter_visible_sections( pppd_get_report_section_posts( $pppd_report->ID ) );
 	$pppd_grouped       = pppd_group_sections_by_parent( $pppd_section_posts );
 	$pppd_sections      = pppd_flatten_section_tree( $pppd_grouped );
 	$pppd_project_slug  = (string) get_post_meta( $pppd_report->ID, '_pppd_project_slug', true );
@@ -85,7 +87,7 @@ while ( have_posts() ) :
 						<?php esc_html_e( 'Print / Save as PDF', 'pretty-professional-process-docs' ); ?>
 					</button>
 				<?php endif; ?>
-				<?php if ( is_user_logged_in() ) : ?>
+				<?php if ( pppd_is_team_viewer() ) : ?>
 					<a class="btn" href="<?php echo esc_url( $pppd_csv_url ); ?>">
 						<?php esc_html_e( 'Download traceability CSV', 'pretty-professional-process-docs' ); ?>
 					</a>
@@ -106,7 +108,10 @@ while ( have_posts() ) :
 			require PPPD_PLUGIN_DIR . 'templates/partials/section.php';
 		}
 
-		require PPPD_PLUGIN_DIR . 'templates/partials/drift-summary.php';
+		// Drift tracking is internal tooling — never part of the client view.
+		if ( pppd_is_team_viewer() ) {
+			require PPPD_PLUGIN_DIR . 'templates/partials/drift-summary.php';
+		}
 		?>
 	</main>
 </div>

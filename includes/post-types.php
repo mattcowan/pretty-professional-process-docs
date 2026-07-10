@@ -151,7 +151,7 @@ function pppd_register_post_statuses() {
 }
 
 /**
- * Register the two taxonomies.
+ * Register the taxonomies.
  *
  * @return void
  */
@@ -185,6 +185,55 @@ function pppd_register_taxonomies() {
 			'labels'            => array(
 				'name'          => __( 'Statuses', 'pretty-professional-process-docs' ),
 				'singular_name' => __( 'Status', 'pretty-professional-process-docs' ),
+			),
+			'hierarchical'      => false,
+			'public'            => false,
+			'show_ui'           => true,
+			'show_in_rest'      => true,
+			'show_admin_column' => true,
+			'capabilities'      => array(
+				'manage_terms' => 'manage_categories',
+				'edit_terms'   => 'manage_categories',
+				'delete_terms' => 'manage_categories',
+				'assign_terms' => 'edit_pppd_reports',
+			),
+		)
+	);
+
+	// Which registered report type a report is. Terms are synced from the
+	// registry (pppd_sync_registry_terms); reports without a term are FRDs.
+	register_taxonomy(
+		'pppd_report_type',
+		'pppd_report',
+		array(
+			'labels'            => array(
+				'name'          => __( 'Report Types', 'pretty-professional-process-docs' ),
+				'singular_name' => __( 'Report Type', 'pretty-professional-process-docs' ),
+			),
+			'hierarchical'      => false,
+			'public'            => false,
+			'show_ui'           => true,
+			'show_in_rest'      => true,
+			'show_admin_column' => true,
+			'capabilities'      => array(
+				'manage_terms' => 'manage_categories',
+				'edit_terms'   => 'manage_categories',
+				'delete_terms' => 'manage_categories',
+				'assign_terms' => 'edit_pppd_reports',
+			),
+		)
+	);
+
+	// The organizing entity a report belongs to. A client has any number of
+	// reports of any type; client users gain view access via membership
+	// (user meta _pppd_client_ids — see includes/clients.php).
+	register_taxonomy(
+		'pppd_client',
+		'pppd_report',
+		array(
+			'labels'            => array(
+				'name'          => __( 'Clients', 'pretty-professional-process-docs' ),
+				'singular_name' => __( 'Client', 'pretty-professional-process-docs' ),
 			),
 			'hierarchical'      => false,
 			'public'            => false,
@@ -358,9 +407,28 @@ function pppd_register_meta() {
 		)
 	);
 
+	// DEPRECATED as client-facing content since 0.3.0: no longer rendered on
+	// the client view. Kept registered (REST contract v1) while consumers
+	// migrate to _pppd_impl_notes; writes mirror one-way into empty impl
+	// notes (pppd_mirror_dev_prompt). Remove the mirror by 0.5.0.
 	register_post_meta(
 		'pppd_section',
 		'_pppd_dev_prompt',
+		array_merge(
+			$common,
+			array(
+				'type'              => 'string',
+				'sanitize_callback' => 'sanitize_textarea_field',
+				'show_in_rest'      => true,
+			)
+		)
+	);
+
+	// Internal-only implementation notes: dev/agent hand-off context that
+	// must NEVER render on the client-facing view or in client exports.
+	register_post_meta(
+		'pppd_section',
+		'_pppd_impl_notes',
 		array_merge(
 			$common,
 			array(
@@ -393,6 +461,20 @@ function pppd_register_meta() {
 				'type'              => 'array',
 				'sanitize_callback' => 'pppd_sanitize_string_array',
 				'show_in_rest'      => pppd_string_array_rest_schema(),
+			)
+		)
+	);
+
+	// Team-only flag: internal sections never render on the client view.
+	register_post_meta(
+		'pppd_section',
+		'_pppd_internal',
+		array_merge(
+			$common,
+			array(
+				'type'              => 'boolean',
+				'sanitize_callback' => 'rest_sanitize_boolean',
+				'show_in_rest'      => true,
 			)
 		)
 	);
@@ -474,6 +556,21 @@ function pppd_register_meta() {
 			array(
 				'type'              => 'integer',
 				'sanitize_callback' => 'absint',
+				'show_in_rest'      => true,
+			)
+		)
+	);
+
+	// GMT MySQL timestamp of the approve/reject decision. Stamped alongside
+	// _pppd_reviewed_by; part of the sign-off audit record.
+	register_post_meta(
+		'pppd_change',
+		'_pppd_reviewed_at',
+		array_merge(
+			$common,
+			array(
+				'type'              => 'string',
+				'sanitize_callback' => 'sanitize_text_field',
 				'show_in_rest'      => true,
 			)
 		)

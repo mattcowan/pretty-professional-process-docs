@@ -22,3 +22,4 @@ require_once __DIR__ . '/includes/capabilities.php';
 pppd_remove_capabilities();
 
 delete_option( 'pppd_version' );
+delete_option( 'pppd_registered_type_hash' );

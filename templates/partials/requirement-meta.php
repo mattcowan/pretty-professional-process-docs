@@ -12,7 +12,10 @@ defined( 'ABSPATH' ) || exit;
 $pppd_req_id     = (string) get_post_meta( $pppd_section->ID, '_pppd_req_id', true );
 $pppd_acceptance = get_post_meta( $pppd_section->ID, '_pppd_acceptance', true );
 $pppd_acceptance = is_array( $pppd_acceptance ) ? $pppd_acceptance : array();
-$pppd_dev_prompt = (string) get_post_meta( $pppd_section->ID, '_pppd_dev_prompt', true );
+
+// Internal-only: implementation notes render for the team, never for clients.
+// (The old client-facing _pppd_dev_prompt block was retired in 0.3.0.)
+$pppd_impl_notes = pppd_is_team_viewer() ? (string) get_post_meta( $pppd_section->ID, '_pppd_impl_notes', true ) : '';
 ?>
 <div class="pppd-requirement-meta">
 	<?php if ( '' !== $pppd_req_id ) : ?>
@@ -56,10 +59,11 @@ $pppd_dev_prompt = (string) get_post_meta( $pppd_section->ID, '_pppd_dev_prompt'
 		</div>
 	<?php endif; ?>
 
-	<?php if ( '' !== $pppd_dev_prompt ) : ?>
-		<div class="callout callout--evidence">
-			<p><strong><?php esc_html_e( 'Developer prompt', 'pretty-professional-process-docs' ); ?></strong></p>
-			<pre><code><?php echo esc_html( $pppd_dev_prompt ); ?></code></pre>
+	<?php if ( '' !== $pppd_impl_notes ) : ?>
+		<div class="callout callout--evidence pppd-internal-only">
+			<p><strong><?php esc_html_e( 'Implementation notes (internal — not shown to clients)', 'pretty-professional-process-docs' ); ?></strong></p>
+			<?php // tabindex + region name: the pre can scroll horizontally, so keyboard users need to reach it (WCAG 2.1.1). ?>
+			<pre tabindex="0" role="region" aria-label="<?php esc_attr_e( 'Implementation notes', 'pretty-professional-process-docs' ); ?>"><code><?php echo esc_html( $pppd_impl_notes ); ?></code></pre>
 		</div>
 	<?php endif; ?>
 </div>

@@ -137,6 +137,32 @@ class PPPD_Meta_Boxes {
 			);
 			?>
 		</p>
+
+		<?php if ( current_user_can( 'pppd_approve_changes' ) ) : ?>
+			<?php
+			$github_repo    = (string) get_post_meta( $post->ID, '_pppd_github_repo', true );
+			$github_trigger = (string) get_post_meta( $post->ID, '_pppd_github_trigger', true );
+			?>
+			<hr />
+			<p>
+				<label for="pppd_github_repo"><strong><?php esc_html_e( 'GitHub repository', 'pretty-professional-process-docs' ); ?></strong></label><br />
+				<input type="text" name="pppd_github_repo" id="pppd_github_repo" class="regular-text code" value="<?php echo esc_attr( $github_repo ); ?>" placeholder="owner/name" />
+				<span class="description"><?php esc_html_e( 'Where approved items become issues (owner/name). The plugin stores no GitHub credential — issues are created by the agent on its next run.', 'pretty-professional-process-docs' ); ?></span>
+			</p>
+			<fieldset>
+				<legend><strong><?php esc_html_e( 'GitHub queue trigger', 'pretty-professional-process-docs' ); ?></strong></legend>
+				<p>
+					<label>
+						<input type="radio" name="pppd_github_trigger" value="manual" <?php checked( 'auto' !== $github_trigger ); ?> />
+						<?php esc_html_e( 'A dev/PM marks approved items ready to push (default)', 'pretty-professional-process-docs' ); ?>
+					</label><br />
+					<label>
+						<input type="radio" name="pppd_github_trigger" value="auto" <?php checked( 'auto' === $github_trigger ); ?> />
+						<?php esc_html_e( 'Client sign-off queues the item automatically', 'pretty-professional-process-docs' ); ?>
+					</label>
+				</p>
+			</fieldset>
+		<?php endif; ?>
 		<?php
 	}
 
@@ -171,6 +197,14 @@ class PPPD_Meta_Boxes {
 
 		$slug = isset( $_POST['pppd_project_slug'] ) ? sanitize_title( wp_unslash( $_POST['pppd_project_slug'] ) ) : '';
 		update_post_meta( $post_id, '_pppd_project_slug', $slug );
+
+		// GitHub settings are human-only (never the agent role).
+		if ( current_user_can( 'pppd_approve_changes' ) && isset( $_POST['pppd_github_repo'] ) ) {
+			update_post_meta( $post_id, '_pppd_github_repo', pppd_sanitize_github_repo( wp_unslash( $_POST['pppd_github_repo'] ) ) ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- sanitized by pppd_sanitize_github_repo.
+
+			$trigger = isset( $_POST['pppd_github_trigger'] ) ? sanitize_key( wp_unslash( $_POST['pppd_github_trigger'] ) ) : 'manual';
+			update_post_meta( $post_id, '_pppd_github_trigger', 'auto' === $trigger ? 'auto' : 'manual' );
+		}
 	}
 
 	// -------------------------------------------------------------------
@@ -189,7 +223,8 @@ class PPPD_Meta_Boxes {
 		$report_id  = absint( get_post_meta( $post->ID, '_pppd_report_id', true ) );
 		$req_id     = (string) get_post_meta( $post->ID, '_pppd_req_id', true );
 		$acceptance = get_post_meta( $post->ID, '_pppd_acceptance', true );
-		$dev_prompt = (string) get_post_meta( $post->ID, '_pppd_dev_prompt', true );
+		$impl_notes = (string) get_post_meta( $post->ID, '_pppd_impl_notes', true );
+		$internal   = (bool) get_post_meta( $post->ID, '_pppd_internal', true );
 		$code_refs  = get_post_meta( $post->ID, '_pppd_code_refs', true );
 		$test_refs  = get_post_meta( $post->ID, '_pppd_test_refs', true );
 
@@ -231,9 +266,17 @@ class PPPD_Meta_Boxes {
 		?>
 
 		<p>
-			<label for="pppd_dev_prompt"><strong><?php esc_html_e( 'Developer prompt', 'pretty-professional-process-docs' ); ?></strong></label><br />
-			<textarea name="pppd_dev_prompt" id="pppd_dev_prompt" rows="4" class="large-text code"><?php echo esc_textarea( $dev_prompt ); ?></textarea>
-			<span class="description"><?php esc_html_e( 'Hand-off prompt for a developer or coding agent implementing this section.', 'pretty-professional-process-docs' ); ?></span>
+			<label for="pppd_impl_notes"><strong><?php esc_html_e( 'Implementation notes (internal)', 'pretty-professional-process-docs' ); ?></strong></label><br />
+			<textarea name="pppd_impl_notes" id="pppd_impl_notes" rows="4" class="large-text code"><?php echo esc_textarea( $impl_notes ); ?></textarea>
+			<span class="description"><?php esc_html_e( 'Dev/agent hand-off context. Never shown on the client-facing report view or in client exports.', 'pretty-professional-process-docs' ); ?></span>
+		</p>
+
+		<p>
+			<label for="pppd_internal">
+				<input type="checkbox" name="pppd_internal" id="pppd_internal" value="1" <?php checked( $internal ); ?> />
+				<strong><?php esc_html_e( 'Team-only section', 'pretty-professional-process-docs' ); ?></strong>
+			</label><br />
+			<span class="description"><?php esc_html_e( 'Hide this entire section (body, discussion, table of contents entry) from client viewers. The team still sees it.', 'pretty-professional-process-docs' ); ?></span>
 		</p>
 
 		<?php
@@ -281,8 +324,10 @@ class PPPD_Meta_Boxes {
 
 		update_post_meta( $post_id, '_pppd_acceptance', $this->lines_from_post( 'pppd_acceptance' ) );
 
-		$dev_prompt = isset( $_POST['pppd_dev_prompt'] ) ? sanitize_textarea_field( wp_unslash( $_POST['pppd_dev_prompt'] ) ) : '';
-		update_post_meta( $post_id, '_pppd_dev_prompt', $dev_prompt );
+		$impl_notes = isset( $_POST['pppd_impl_notes'] ) ? sanitize_textarea_field( wp_unslash( $_POST['pppd_impl_notes'] ) ) : '';
+		update_post_meta( $post_id, '_pppd_impl_notes', $impl_notes );
+
+		update_post_meta( $post_id, '_pppd_internal', isset( $_POST['pppd_internal'] ) ? 1 : 0 );
 
 		update_post_meta( $post_id, '_pppd_code_refs', $this->lines_from_post( 'pppd_code_refs' ) );
 		update_post_meta( $post_id, '_pppd_test_refs', $this->lines_from_post( 'pppd_test_refs' ) );

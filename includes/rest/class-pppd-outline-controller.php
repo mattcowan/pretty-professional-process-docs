@@ -43,31 +43,14 @@ class PPPD_Outline_Controller {
 	}
 
 	/**
-	 * Permission check: reader access plus a real report.
+	 * Permission check: a real report the current user may view (team
+	 * capability, client membership, or per-report assignment).
 	 *
 	 * @param WP_REST_Request $request Request.
 	 * @return true|WP_Error
 	 */
 	public function permission_check( $request ) {
-		if ( ! current_user_can( 'read' ) ) {
-			return new WP_Error(
-				'pppd_forbidden',
-				__( 'You are not allowed to read report outlines.', 'pretty-professional-process-docs' ),
-				array( 'status' => rest_authorization_required_code() )
-			);
-		}
-
-		$report = get_post( absint( $request['id'] ) );
-
-		if ( ! $report instanceof WP_Post || 'pppd_report' !== $report->post_type ) {
-			return new WP_Error(
-				'pppd_report_not_found',
-				__( 'Report not found.', 'pretty-professional-process-docs' ),
-				array( 'status' => 404 )
-			);
-		}
-
-		return true;
+		return pppd_rest_view_permission_check( $request );
 	}
 
 	/**
@@ -77,39 +60,57 @@ class PPPD_Outline_Controller {
 	 * @return WP_REST_Response
 	 */
 	public function get_outline( $request ) {
-		$report_id = absint( $request['id'] );
-		$report    = get_post( $report_id );
-		$sections  = array();
+		return rest_ensure_response( pppd_get_outline_payload( absint( $request['id'] ) ) );
+	}
+}
 
-		foreach ( pppd_get_report_sections( $report_id ) as $entry ) {
-			$section = $entry['post'];
+/**
+ * Build the outline payload (shared by the REST route and the pppd/get-outline
+ * ability — one shape, one source of truth).
+ *
+ * @param int $report_id Report post ID.
+ * @return array<string, mixed>
+ */
+function pppd_get_outline_payload( $report_id ) {
+	$report   = get_post( $report_id );
+	$sections = array();
 
-			$edit_link = get_edit_post_link( $section->ID, 'raw' );
+	foreach ( pppd_get_report_sections( $report_id ) as $entry ) {
+		$section = $entry['post'];
 
-			$sections[] = array(
-				'id'            => (int) $section->ID,
-				'title'         => get_the_title( $section ),
-				'parent'        => (int) $section->post_parent,
-				'order'         => (int) $section->menu_order,
-				'depth'         => (int) $entry['depth'],
-				'type'          => pppd_get_section_term_slug( $section, 'pppd_section_type' ),
-				'status'        => pppd_get_section_term_slug( $section, 'pppd_status' ),
-				'req_id'        => (string) get_post_meta( $section->ID, '_pppd_req_id', true ),
-				'comment_count' => (int) get_comments_number( $section ),
-				'edit_link'     => is_string( $edit_link ) ? $edit_link : '',
-			);
-		}
+		$edit_link = get_edit_post_link( $section->ID, 'raw' );
 
-		return rest_ensure_response(
-			array(
-				'report'   => array(
-					'id'           => (int) $report->ID,
-					'title'        => get_the_title( $report ),
-					'link'         => get_permalink( $report ),
-					'project_slug' => (string) get_post_meta( $report->ID, '_pppd_project_slug', true ),
-				),
-				'sections' => $sections,
-			)
+		$sections[] = array(
+			'id'            => (int) $section->ID,
+			'title'         => get_the_title( $section ),
+			'parent'        => (int) $section->post_parent,
+			'order'         => (int) $section->menu_order,
+			'depth'         => (int) $entry['depth'],
+			'type'          => pppd_get_section_term_slug( $section, 'pppd_section_type' ),
+			'status'        => pppd_get_section_term_slug( $section, 'pppd_status' ),
+			'req_id'        => (string) get_post_meta( $section->ID, '_pppd_req_id', true ),
+			'comment_count' => (int) get_comments_number( $section ),
+			'edit_link'     => is_string( $edit_link ) ? $edit_link : '',
+			// Additive (contract v1): the sign-off record. Agent runs MUST
+			// treat signoff.state 'approved' as read-only — skip the section
+			// or propose a change flagged for re-approval.
+			'signoff'       => pppd_get_section_signoff( $section ),
+			'internal'      => pppd_section_is_internal( $section ),
 		);
 	}
+
+	return array(
+		// Additive (contract v1): lets skills detect an old plugin instead of
+		// failing obscurely on a missing feature.
+		'pppd_contract_version' => PPPD_CONTRACT_VERSION,
+		'report'                => array(
+			'id'           => (int) $report->ID,
+			'title'        => get_the_title( $report ),
+			'link'         => get_permalink( $report ),
+			'project_slug' => (string) get_post_meta( $report->ID, '_pppd_project_slug', true ),
+			// Additive (contract v1): registered report type slug.
+			'type'         => pppd_get_report_type( $report ),
+		),
+		'sections'              => $sections,
+	);
 }

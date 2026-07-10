@@ -49,16 +49,26 @@ final class PPPD_Plugin {
 		require_once PPPD_PLUGIN_DIR . 'includes/post-types.php';
 		require_once PPPD_PLUGIN_DIR . 'includes/capabilities.php';
 		require_once PPPD_PLUGIN_DIR . 'includes/helpers.php';
+		require_once PPPD_PLUGIN_DIR . 'includes/class-pppd-registry.php';
+		require_once PPPD_PLUGIN_DIR . 'includes/clients.php';
+		require_once PPPD_PLUGIN_DIR . 'includes/access.php';
 		require_once PPPD_PLUGIN_DIR . 'includes/requirement-ids.php';
 		require_once PPPD_PLUGIN_DIR . 'includes/revisions.php';
 		require_once PPPD_PLUGIN_DIR . 'includes/change-actions.php';
+		require_once PPPD_PLUGIN_DIR . 'includes/signoff.php';
+		require_once PPPD_PLUGIN_DIR . 'includes/content-quality.php';
+		require_once PPPD_PLUGIN_DIR . 'includes/github-queue.php';
+		require_once PPPD_PLUGIN_DIR . 'includes/abilities.php';
 		require_once PPPD_PLUGIN_DIR . 'includes/rest/class-pppd-outline-controller.php';
 		require_once PPPD_PLUGIN_DIR . 'includes/rest/class-pppd-changes-controller.php';
 		require_once PPPD_PLUGIN_DIR . 'includes/rest/class-pppd-drift-controller.php';
 		require_once PPPD_PLUGIN_DIR . 'includes/rest/class-pppd-traceability-controller.php';
+		require_once PPPD_PLUGIN_DIR . 'includes/rest/class-pppd-reorder-controller.php';
+		require_once PPPD_PLUGIN_DIR . 'includes/rest/class-pppd-github-controller.php';
 		require_once PPPD_PLUGIN_DIR . 'includes/admin/class-pppd-review-queue.php';
 		require_once PPPD_PLUGIN_DIR . 'includes/admin/class-pppd-meta-boxes.php';
 		require_once PPPD_PLUGIN_DIR . 'includes/admin/class-pppd-list-columns.php';
+		require_once PPPD_PLUGIN_DIR . 'includes/admin/class-pppd-report-outline.php';
 		require_once PPPD_PLUGIN_DIR . 'includes/frontend/class-pppd-template-loader.php';
 		require_once PPPD_PLUGIN_DIR . 'includes/frontend/comments.php';
 		require_once PPPD_PLUGIN_DIR . 'includes/frontend/uploads.php';
@@ -71,7 +81,13 @@ final class PPPD_Plugin {
 	 */
 	private function hooks() {
 		add_action( 'init', array( $this, 'load_textdomain' ) );
+
+		// Registry lifecycle: built-ins + the pppd_register_types extension
+		// point at 5; core objects at 10; registry side effects (field meta,
+		// term sync, validation) at 20 once taxonomies and core meta exist.
+		add_action( 'init', 'pppd_register_builtin_types', 5 );
 		add_action( 'init', array( $this, 'register_objects' ) );
+		add_action( 'init', 'pppd_registry_apply', 20 );
 
 		add_action( 'save_post_pppd_section', 'pppd_maybe_assign_requirement_id', 20, 3 );
 		add_action( 'rest_after_insert_pppd_section', 'pppd_maybe_assign_requirement_id_rest', 20 );
@@ -85,12 +101,19 @@ final class PPPD_Plugin {
 			new PPPD_Review_Queue();
 			new PPPD_Meta_Boxes();
 			new PPPD_List_Columns();
+			new PPPD_Report_Outline();
 		}
 
 		// Front end.
 		new PPPD_Template_Loader();
 		pppd_comments_init();
 		pppd_uploads_init();
+		pppd_clients_init();
+		pppd_access_init();
+		pppd_signoff_init();
+		pppd_content_quality_init();
+		pppd_github_queue_init();
+		pppd_abilities_init();
 	}
 
 	/**
@@ -116,6 +139,9 @@ final class PPPD_Plugin {
 		pppd_register_post_statuses();
 		pppd_register_taxonomies();
 		pppd_register_meta();
+		pppd_register_client_meta();
+		pppd_register_signoff_meta();
+		pppd_register_github_meta();
 	}
 
 	/**
@@ -128,5 +154,7 @@ final class PPPD_Plugin {
 		( new PPPD_Changes_Controller() )->register_routes();
 		( new PPPD_Drift_Controller() )->register_routes();
 		( new PPPD_Traceability_Controller() )->register_routes();
+		( new PPPD_Reorder_Controller() )->register_routes();
+		( new PPPD_GitHub_Controller() )->register_routes();
 	}
 }
