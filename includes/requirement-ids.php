@@ -1,9 +1,13 @@
 <?php
 /**
- * Requirement ID assignment.
+ * Item ID assignment (requirement IDs and any other ID-bearing section type).
  *
- * IDs are assigned once, on first publish of a requirement-type section,
- * and are never reassigned or reused.
+ * IDs are assigned once, on first publish of a section whose registered type
+ * declares has_ids, and are never reassigned or reused. Which types bear IDs,
+ * and under which prefix, comes from the registry (class-pppd-registry.php);
+ * the historical behavior — requirement sections in an FRD get FR-001,
+ * FR-002, … from the per-report _pppd_req_counter meta — is preserved
+ * exactly.
  *
  * @package PPPD
  */
@@ -11,7 +15,7 @@
 defined( 'ABSPATH' ) || exit;
 
 /**
- * Maybe assign a requirement ID when a section is saved.
+ * Maybe assign an item ID when a section is saved.
  *
  * Hooked to save_post_pppd_section at priority 20 so the meta box save
  * (priority 10) has already stored _pppd_report_id.
@@ -30,7 +34,7 @@ function pppd_maybe_assign_requirement_id( $post_id, $post, $update ) { // phpcs
 		return;
 	}
 
-	if ( ! has_term( 'requirement', 'pppd_section_type', $post ) ) {
+	if ( ! pppd_section_type_supports( $post, 'has_ids' ) ) {
 		return;
 	}
 
@@ -53,20 +57,94 @@ function pppd_maybe_assign_requirement_id( $post_id, $post, $update ) { // phpcs
 		return;
 	}
 
-	$counter = pppd_claim_next_requirement_number( $report_id );
+	$type_slug = pppd_get_section_type_slug( $post );
+	$prefix    = pppd_resolve_item_id_prefix( $post, $report );
+	$counter   = pppd_claim_next_requirement_number( $report_id, pppd_item_counter_meta_key( $type_slug, $prefix ) );
 
-	$prefix = get_post_meta( $report_id, '_pppd_req_prefix', true );
+	$report_type = pppd_get_report_type_object( $report );
+	$format      = ( null !== $report_type && ! empty( $report_type['id_scheme']['format'] ) ) ? (string) $report_type['id_scheme']['format'] : '%s-%03d';
 
-	if ( ! is_string( $prefix ) || '' === $prefix ) {
+	$item_id = sprintf( $format, $prefix, $counter ); // phpcs:ignore WordPress.WP.I18n.NonSingularStringLiteralText -- ID format, not a translatable string.
+
+	update_post_meta( $post_id, '_pppd_req_id', $item_id );
+
+	/**
+	 * Fires after an item ID is assigned to a section.
+	 *
+	 * @param int    $post_id   Section post ID.
+	 * @param string $item_id   The assigned ID (e.g. FR-007).
+	 * @param int    $report_id Report post ID.
+	 */
+	do_action( 'pppd_item_id_assigned', $post_id, $item_id, $report_id );
+}
+
+/**
+ * Resolve the ID prefix for a section within its report.
+ *
+ * Order: an explicit per-report _pppd_req_prefix meta row (only for section
+ * types that declare report_prefix_override — the requirement built-in), then
+ * the section type's own id_prefix, then the report type's id_scheme prefix,
+ * then 'FR'. Filterable via pppd_item_id_prefix.
+ *
+ * @param WP_Post $section Section post.
+ * @param WP_Post $report  Report post.
+ * @return string
+ */
+function pppd_resolve_item_id_prefix( $section, $report ) {
+	$type_slug    = pppd_get_section_type_slug( $section );
+	$section_type = pppd_registry()->get_section_type( $type_slug );
+	$report_type  = pppd_get_report_type_object( $report );
+
+	$prefix = '';
+
+	if ( null !== $section_type && ! empty( $section_type['report_prefix_override'] ) && metadata_exists( 'post', $report->ID, '_pppd_req_prefix' ) ) {
+		$prefix = (string) get_post_meta( $report->ID, '_pppd_req_prefix', true );
+	}
+
+	if ( '' === $prefix && null !== $section_type ) {
+		$prefix = (string) $section_type['id_prefix'];
+	}
+
+	if ( '' === $prefix && null !== $report_type && ! empty( $report_type['id_scheme']['prefix'] ) ) {
+		$prefix = (string) $report_type['id_scheme']['prefix'];
+	}
+
+	if ( '' === $prefix ) {
 		$prefix = 'FR';
 	}
 
-	update_post_meta( $post_id, '_pppd_req_id', sprintf( '%s-%03d', $prefix, $counter ) );
+	/**
+	 * Filter the resolved item-ID prefix for a section.
+	 *
+	 * @param string  $prefix  Resolved prefix.
+	 * @param WP_Post $section Section post.
+	 * @param WP_Post $report  Report post.
+	 */
+	return (string) apply_filters( 'pppd_item_id_prefix', $prefix, $section, $report );
+}
+
+/**
+ * The per-report counter meta key for a section type + prefix pair.
+ *
+ * Requirement sections keep the legacy _pppd_req_counter key — a contract
+ * invariant; existing FRD reports must keep numbering from where they left
+ * off. Every other ID-bearing type counts per prefix.
+ *
+ * @param string $type_slug Section type slug.
+ * @param string $prefix    Resolved ID prefix.
+ * @return string Meta key.
+ */
+function pppd_item_counter_meta_key( $type_slug, $prefix ) {
+	if ( 'requirement' === $type_slug ) {
+		return '_pppd_req_counter';
+	}
+
+	return '_pppd_counter_' . sanitize_key( $prefix );
 }
 
 /**
  * REST-created sections: terms and meta are assigned AFTER wp_insert_post
- * fires save_post, so the save_post callback sees neither the requirement
+ * fires save_post, so the save_post callback sees neither the section type
  * term nor _pppd_report_id. Re-run the assignment once the full REST insert
  * (fields, meta, terms) has completed.
  *
@@ -78,36 +156,38 @@ function pppd_maybe_assign_requirement_id_rest( $post ) {
 }
 
 /**
- * Atomically claim the next requirement number for a report.
+ * Atomically claim the next item number for a report's counter.
  *
- * The counter lives in the _pppd_req_counter post meta. A naive
- * read-then-write races when two requirement sections are published for the
- * same report concurrently: both reads see the same value and both hand out
- * the same number. Instead we compare-and-swap in a retry loop:
+ * The counter lives in per-report post meta ($meta_key). A naive
+ * read-then-write races when two sections are published for the same report
+ * concurrently: both reads see the same value and both hand out the same
+ * number. Instead we compare-and-swap in a retry loop:
  *
- *   - The first requirement seeds the counter with a `unique` insert.
- *   - Subsequent requirements pass the previously-read value as
+ *   - The first item seeds the counter with a `unique` insert.
+ *   - Subsequent items pass the previously-read value as
  *     update_post_meta()'s $prev_value, so the underlying UPDATE only matches
  *     while the stored value is unchanged. A racing writer that already bumped
  *     the counter makes the conditional update affect zero rows; we re-read
  *     (bypassing the meta cache) and try again with the fresh value.
  *
  * @since 0.1.0
+ * @since 0.2.0 The $meta_key parameter.
  *
- * @param int $report_id Report post ID.
- * @return int The number claimed for this requirement (>= 1).
+ * @param int    $report_id Report post ID.
+ * @param string $meta_key  Counter meta key. Default _pppd_req_counter.
+ * @return int The number claimed (>= 1).
  */
-function pppd_claim_next_requirement_number( $report_id ) {
+function pppd_claim_next_requirement_number( $report_id, $meta_key = '_pppd_req_counter' ) {
 	$max_attempts = 10;
 
 	for ( $attempt = 0; $attempt < $max_attempts; $attempt++ ) {
-		$raw = get_post_meta( $report_id, '_pppd_req_counter', true );
+		$raw = get_post_meta( $report_id, $meta_key, true );
 
-		// No counter yet: claim FR-001 with an insert that only lands when the
-		// key is still absent. A racing seeder makes this fail; we fall through
-		// to the update branch on the next iteration.
+		// No counter yet: claim number 1 with an insert that only lands when
+		// the key is still absent. A racing seeder makes this fail; we fall
+		// through to the update branch on the next iteration.
 		if ( '' === $raw || null === $raw || false === $raw ) {
-			if ( add_post_meta( $report_id, '_pppd_req_counter', 1, true ) ) {
+			if ( add_post_meta( $report_id, $meta_key, 1, true ) ) {
 				return 1;
 			}
 
@@ -119,7 +199,7 @@ function pppd_claim_next_requirement_number( $report_id ) {
 		$next    = $current + 1;
 
 		// Conditional update: matches only while the stored value is $current.
-		if ( update_post_meta( $report_id, '_pppd_req_counter', $next, $current ) ) {
+		if ( update_post_meta( $report_id, $meta_key, $next, $current ) ) {
 			return $next;
 		}
 
@@ -130,8 +210,8 @@ function pppd_claim_next_requirement_number( $report_id ) {
 
 	// Retries exhausted (pathological contention): fall back to a best-effort
 	// non-atomic bump so a number is still assigned.
-	$counter = absint( get_post_meta( $report_id, '_pppd_req_counter', true ) ) + 1;
-	update_post_meta( $report_id, '_pppd_req_counter', $counter );
+	$counter = absint( get_post_meta( $report_id, $meta_key, true ) ) + 1;
+	update_post_meta( $report_id, $meta_key, $counter );
 
 	return $counter;
 }

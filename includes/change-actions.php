@@ -27,6 +27,7 @@ function pppd_get_change_summary( $change ) {
 		'reject_reason'    => (string) get_post_meta( $change->ID, '_pppd_reject_reason', true ),
 		'applied_revision' => absint( get_post_meta( $change->ID, '_pppd_applied_revision', true ) ),
 		'reviewed_by'      => absint( get_post_meta( $change->ID, '_pppd_reviewed_by', true ) ),
+		'reviewed_at'      => (string) get_post_meta( $change->ID, '_pppd_reviewed_at', true ),
 	);
 }
 
@@ -117,6 +118,21 @@ function pppd_approve_change( $change_id, $user_id = 0 ) {
 
 	$user_id = ( $user_id > 0 ) ? absint( $user_id ) : get_current_user_id();
 	update_post_meta( $change->ID, '_pppd_reviewed_by', $user_id );
+	update_post_meta( $change->ID, '_pppd_reviewed_at', current_time( 'mysql', true ) );
+
+	$revision_id = ( $latest instanceof WP_Post ) ? (int) $latest->ID : 0;
+
+	/**
+	 * Fires after a proposed change is approved and applied to its section.
+	 *
+	 * The seam for approval auditing and the section sign-off lock.
+	 *
+	 * @param int $change_id   Change post ID.
+	 * @param int $section_id  Target section post ID.
+	 * @param int $revision_id Section revision created by the applied edit (0 if none).
+	 * @param int $user_id     Reviewing user ID.
+	 */
+	do_action( 'pppd_change_approved', (int) $change->ID, (int) $section->ID, $revision_id, $user_id );
 
 	return pppd_get_change_summary( get_post( $change->ID ) );
 }
@@ -166,6 +182,16 @@ function pppd_reject_change( $change_id, $reason = '', $user_id = 0 ) {
 
 	$user_id = ( $user_id > 0 ) ? absint( $user_id ) : get_current_user_id();
 	update_post_meta( $change->ID, '_pppd_reviewed_by', $user_id );
+	update_post_meta( $change->ID, '_pppd_reviewed_at', current_time( 'mysql', true ) );
+
+	/**
+	 * Fires after a proposed change is rejected.
+	 *
+	 * @param int    $change_id Change post ID.
+	 * @param int    $user_id   Reviewing user ID.
+	 * @param string $reason    Rejection reason ('' if none given).
+	 */
+	do_action( 'pppd_change_rejected', (int) $change->ID, $user_id, sanitize_text_field( (string) $reason ) );
 
 	return pppd_get_change_summary( get_post( $change->ID ) );
 }

@@ -8,17 +8,19 @@
 defined( 'ABSPATH' ) || exit;
 
 /**
- * Get every published section belonging to a report, ordered by
- * menu_order then title.
+ * Get every section belonging to a report, ordered by menu_order then title.
  *
- * @param int $report_id Report post ID.
+ * @param int             $report_id Report post ID.
+ * @param string|string[] $statuses  Post statuses to include. Default 'publish'
+ *                                   (the client-facing render); authoring
+ *                                   surfaces pass pppd_authoring_statuses().
  * @return WP_Post[]
  */
-function pppd_get_report_section_posts( $report_id ) {
+function pppd_get_report_section_posts( $report_id, $statuses = 'publish' ) {
 	$query = new WP_Query(
 		array(
 			'post_type'              => 'pppd_section',
-			'post_status'            => 'publish',
+			'post_status'            => $statuses,
 			'posts_per_page'         => -1,
 			'meta_key'               => '_pppd_report_id', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
 			'meta_value'             => (string) absint( $report_id ), // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
@@ -91,13 +93,80 @@ function pppd_flatten_section_tree( $grouped, $parent = 0, $depth = 0 ) {
 /**
  * Get a report's sections as a flat, hierarchy-ordered list with depths.
  *
- * @param int $report_id Report post ID.
+ * @param int             $report_id Report post ID.
+ * @param string|string[] $statuses  Post statuses to include. Default 'publish'.
  * @return array<int, array{post: WP_Post, depth: int}>
  */
-function pppd_get_report_sections( $report_id ) {
-	$posts = pppd_get_report_section_posts( $report_id );
+function pppd_get_report_sections( $report_id, $statuses = 'publish' ) {
+	$posts = pppd_get_report_section_posts( $report_id, $statuses );
 
 	return pppd_flatten_section_tree( pppd_group_sections_by_parent( $posts ) );
+}
+
+/**
+ * The post statuses authoring surfaces work across (everything an editor can
+ * still act on, unlike the publish-only client render).
+ *
+ * @return string[]
+ */
+function pppd_authoring_statuses() {
+	return array( 'publish', 'draft', 'pending', 'future', 'private' );
+}
+
+/**
+ * Build the authoring outline for a report: every section (all authoring
+ * statuses) with depth, badges, edit links, and per-row movement flags for
+ * the outline metabox / reorder endpoint.
+ *
+ * @param int $report_id Report post ID.
+ * @return array<int, array<string, mixed>>
+ */
+function pppd_get_authoring_outline( $report_id ) {
+	$posts   = pppd_get_report_section_posts( $report_id, pppd_authoring_statuses() );
+	$grouped = pppd_group_sections_by_parent( $posts );
+	$ids     = array_map( 'intval', wp_list_pluck( $posts, 'ID' ) );
+	$entries = array();
+
+	foreach ( pppd_flatten_section_tree( $grouped ) as $entry ) {
+		$section = $entry['post'];
+		$depth   = (int) $entry['depth'];
+
+		// Effective parent (orphaned branches are treated as roots, matching
+		// pppd_group_sections_by_parent()).
+		$parent   = in_array( (int) $section->post_parent, $ids, true ) ? (int) $section->post_parent : 0;
+		$siblings = isset( $grouped[ $parent ] ) ? $grouped[ $parent ] : array();
+		$index    = 0;
+
+		foreach ( $siblings as $i => $sibling ) {
+			if ( (int) $sibling->ID === (int) $section->ID ) {
+				$index = (int) $i;
+				break;
+			}
+		}
+
+		$edit_link = get_edit_post_link( $section->ID, 'raw' );
+
+		$entries[] = array(
+			'id'          => (int) $section->ID,
+			// Decoded: this payload feeds both esc_html() in PHP and
+			// textContent in JS — entities must not arrive pre-encoded.
+			'title'       => wp_specialchars_decode( get_the_title( $section ), ENT_QUOTES ),
+			'parent'      => $parent,
+			'depth'       => $depth,
+			'type'        => pppd_get_section_type_slug( $section ),
+			'post_status' => (string) $section->post_status,
+			'status'      => pppd_get_section_term_slug( $section, 'pppd_status' ),
+			'req_id'      => (string) get_post_meta( $section->ID, '_pppd_req_id', true ),
+			'edit_link'   => is_string( $edit_link ) ? $edit_link : '',
+			'anchor'      => pppd_section_anchor( $section ),
+			'can_up'      => $index > 0,
+			'can_down'    => $index < count( $siblings ) - 1,
+			'can_indent'  => $index > 0,
+			'can_outdent' => $depth > 0,
+		);
+	}
+
+	return $entries;
 }
 
 /**

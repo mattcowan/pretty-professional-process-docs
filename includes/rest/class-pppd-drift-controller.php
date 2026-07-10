@@ -115,11 +115,14 @@ class PPPD_Drift_Controller {
 	/**
 	 * Permission check for reading drift runs.
 	 *
+	 * Team-only: drift is internal tooling and never part of the client view,
+	 * so reads require edit_pppd_reports (agents and team pass; clients do not).
+	 *
 	 * @param WP_REST_Request $request Request.
 	 * @return true|WP_Error
 	 */
 	public function read_permission_check( $request ) {
-		if ( ! current_user_can( 'read' ) ) {
+		if ( ! current_user_can( 'edit_pppd_reports' ) ) {
 			return new WP_Error(
 				'pppd_forbidden',
 				__( 'You are not allowed to read drift runs.', 'pretty-professional-process-docs' ),

@@ -1,0 +1,79 @@
+/* Report outline metabox + section navigation box. */
+
+.pppd-outline-list {
+	margin: 0 0 12px;
+	list-style: none;
+}
+
+.pppd-outline-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	padding: 6px 8px 6px calc(8px + (var(--pppd-depth, 0) * 24px));
+	border: 1px solid #dcdcde;
+	border-radius: 2px;
+	margin-bottom: 4px;
+	background: #fff;
+}
+
+.pppd-outline-main {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 8px;
+	min-width: 0;
+}
+
+.pppd-outline-title {
+	font-weight: 600;
+}
+
+.pppd-badge {
+	display: inline-block;
+	padding: 1px 6px;
+	border-radius: 3px;
+	border: 1px solid #c3c4c7;
+	font-size: 11px;
+	line-height: 1.6;
+	text-transform: uppercase;
+	letter-spacing: 0.02em;
+}
+
+.pppd-badge--draft {
+	border-style: dashed;
+}
+
+.pppd-outline-reqid {
+	font-size: 12px;
+}
+
+.pppd-outline-actions {
+	display: flex;
+	gap: 2px;
+	flex: none;
+}
+
+/* Keep a visible focus ring even inside the metabox chrome. */
+.pppd-outline-actions .button:focus {
+	box-shadow: 0 0 0 2px #2271b1;
+	outline: 2px solid transparent;
+}
+
+.pppd-outline-add {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+
+#pppd_section_nav .button {
+	display: inline-block;
+	margin: 2px 4px 2px 0;
+	max-width: 100%;
+	white-space: normal;
+	text-align: left;
+	height: auto;
+	padding-top: 4px;
+	padding-bottom: 4px;
+}
