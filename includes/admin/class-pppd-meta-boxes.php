@@ -162,6 +162,14 @@ class PPPD_Meta_Boxes {
 					</label>
 				</p>
 			</fieldset>
+			<hr />
+			<p>
+				<label>
+					<input type="checkbox" name="pppd_public" value="1" <?php checked( (bool) get_post_meta( $post->ID, '_pppd_public', true ) ); ?> />
+					<strong><?php esc_html_e( 'Publicly visible', 'pretty-professional-process-docs' ); ?></strong>
+				</label><br />
+				<span class="description"><?php esc_html_e( 'Anonymous visitors can read this report once it is published — published, non-internal sections only. Use for work samples; leave off for client documents.', 'pretty-professional-process-docs' ); ?></span>
+			</p>
 		<?php endif; ?>
 		<?php
 	}
@@ -204,6 +212,10 @@ class PPPD_Meta_Boxes {
 
 			$trigger = isset( $_POST['pppd_github_trigger'] ) ? sanitize_key( wp_unslash( $_POST['pppd_github_trigger'] ) ) : 'manual';
 			update_post_meta( $post_id, '_pppd_github_trigger', 'auto' === $trigger ? 'auto' : 'manual' );
+
+			// Public visibility is human-only for the same reason: agents must
+			// never be able to expose a client document to the world.
+			update_post_meta( $post_id, '_pppd_public', isset( $_POST['pppd_public'] ) ? 1 : 0 );
 		}
 	}
 

@@ -73,6 +73,9 @@ function pppd_register_post_types() {
 			'show_in_rest'       => true,
 			'rest_base'          => 'pppd-sections',
 			'supports'           => array( 'title', 'editor', 'revisions', 'comments', 'page-attributes', 'author', 'custom-fields' ),
+			// Seed new sections with a paragraph block (no template_lock —
+			// authors stay free; the pppd/* patterns offer richer skeletons).
+			'template'           => array( array( 'core/paragraph' ) ),
 			'capability_type'    => pppd_capability_type(),
 			'map_meta_cap'       => true,
 		)
@@ -644,6 +647,22 @@ function pppd_register_meta() {
 				'sanitize_callback' => 'esc_url_raw',
 				'show_in_rest'      => true,
 			)
+		)
+	);
+
+	// Whether this report is publicly readable (anonymous visitors, e.g. a
+	// published work sample). Human-only write: the agent role must never be
+	// able to expose a client document to the world. Anonymous readers still
+	// get only published, non-internal sections.
+	register_post_meta(
+		'pppd_report',
+		'_pppd_public',
+		array(
+			'single'            => true,
+			'type'              => 'boolean',
+			'sanitize_callback' => 'rest_sanitize_boolean',
+			'show_in_rest'      => true,
+			'auth_callback'     => 'pppd_human_meta_auth_callback',
 		)
 	);
 

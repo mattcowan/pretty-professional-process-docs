@@ -123,6 +123,29 @@ class Test_Requirement_Ids extends WP_UnitTestCase {
 		$this->assertSame( '', get_post_meta( $section_id, '_pppd_req_id', true ) );
 	}
 
+	public function test_minted_id_survives_publish_draft_publish_round_trip() {
+		$report_id  = $this->create_report();
+		$section_id = $this->create_published_section( $report_id, 'requirement' );
+
+		$this->assertSame( 'FR-001', get_post_meta( $section_id, '_pppd_req_id', true ) );
+
+		wp_update_post(
+			array(
+				'ID'          => $section_id,
+				'post_status' => 'draft',
+			)
+		);
+		wp_update_post(
+			array(
+				'ID'          => $section_id,
+				'post_status' => 'publish',
+			)
+		);
+
+		$this->assertSame( 'FR-001', get_post_meta( $section_id, '_pppd_req_id', true ) );
+		$this->assertSame( 1, (int) get_post_meta( $report_id, '_pppd_req_counter', true ) );
+	}
+
 	public function test_change_order_reports_use_their_id_scheme_prefix() {
 		$report_id = $this->create_report( 'change-order' );
 

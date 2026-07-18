@@ -153,6 +153,32 @@ class Test_Github_Queue extends WP_UnitTestCase {
 		$this->assertSame( 400, rest_get_server()->dispatch( $push )->get_status() );
 	}
 
+	public function test_queue_item_renders_block_markup_to_plain_html() {
+		list( , $section_id ) = $this->fixture();
+
+		wp_update_post(
+			array(
+				'ID'           => $section_id,
+				'post_content' => "<!-- wp:paragraph -->\n<p>The switcher lists all companies.</p>\n<!-- /wp:paragraph -->",
+			)
+		);
+
+		$item = pppd_build_github_queue_item( get_post( $section_id ) );
+
+		$this->assertStringNotContainsString( '<!-- wp:', $item['content'], 'Issue bodies must not carry block serialization comments' );
+		// do_blocks() may add block classes (e.g. wp-block-paragraph); the
+		// contract is plain HTML, not exact attributes.
+		$this->assertMatchesRegularExpression( '/<p[^>]*>The switcher lists all companies\.<\/p>/', $item['content'] );
+	}
+
+	public function test_queue_item_passes_raw_html_content_through_unchanged() {
+		list( , $section_id ) = $this->fixture();
+
+		$item = pppd_build_github_queue_item( get_post( $section_id ) );
+
+		$this->assertSame( 'The switcher lists all companies.', $item['content'] );
+	}
+
 	public function test_queue_rest_surface_rejects_clients() {
 		wp_set_current_user( self::factory()->user->create( array( 'role' => 'subscriber' ) ) );
 

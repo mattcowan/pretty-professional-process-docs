@@ -27,6 +27,53 @@ function pppd_access_init() {
 	add_action( 'pre_get_posts', 'pppd_exclude_reports_from_search' );
 	add_filter( 'rest_request_before_callbacks', 'pppd_guard_report_rest_single', 10, 3 );
 	add_filter( 'rest_pppd_report_query', 'pppd_scope_report_rest_collection', 10, 2 );
+	add_action( 'admin_bar_menu', 'pppd_admin_bar_preview_link', 90 );
+}
+
+/**
+ * Whether a team viewer asked to see the report exactly as a client sees it
+ * (published sections only, no draft flags).
+ *
+ * Read-only view switch driven by ?pppd_preview=published — no state changes,
+ * so no nonce. The parameter is inert for non-team viewers, whose render is
+ * publish-only regardless.
+ *
+ * @return bool
+ */
+function pppd_is_client_preview() {
+	if ( ! pppd_is_team_viewer() ) {
+		return false;
+	}
+
+	// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only view switch.
+	return isset( $_GET['pppd_preview'] ) && 'published' === sanitize_key( wp_unslash( $_GET['pppd_preview'] ) );
+}
+
+/**
+ * Admin-bar toggle between the team view (drafts included, flagged) and the
+ * client preview (published sections only) on single report views.
+ *
+ * @param WP_Admin_Bar $wp_admin_bar Admin bar.
+ * @return void
+ */
+function pppd_admin_bar_preview_link( $wp_admin_bar ) {
+	if ( is_admin() || ! is_singular( 'pppd_report' ) || ! pppd_is_team_viewer() ) {
+		return;
+	}
+
+	$in_preview = pppd_is_client_preview();
+
+	$wp_admin_bar->add_node(
+		array(
+			'id'    => 'pppd-preview-toggle',
+			'title' => $in_preview
+				? __( 'Back to team view (includes drafts)', 'pretty-professional-process-docs' )
+				: __( 'View as client (published only)', 'pretty-professional-process-docs' ),
+			'href'  => $in_preview
+				? remove_query_arg( 'pppd_preview' )
+				: add_query_arg( 'pppd_preview', 'published' ),
+		)
+	);
 }
 
 /**
@@ -74,13 +121,58 @@ function pppd_filter_visible_sections( $sections ) {
 }
 
 /**
+ * Whether a report has been deliberately made world-readable (a published
+ * work sample). Requires publish status AND the human-only _pppd_public flag.
+ *
+ * Public never widens what a reader gets: anonymous visitors still receive
+ * only published, non-internal sections.
+ *
+ * @param int $report_id Report post ID.
+ * @return bool
+ */
+function pppd_report_is_public( $report_id ) {
+	$report = get_post( absint( $report_id ) );
+
+	return $report instanceof WP_Post
+		&& 'pppd_report' === $report->post_type
+		&& 'publish' === $report->post_status
+		&& (bool) get_post_meta( $report->ID, '_pppd_public', true );
+}
+
+/**
+ * All public report IDs (for scoping collection reads).
+ *
+ * @return int[]
+ */
+function pppd_get_public_report_ids() {
+	return array_map(
+		'intval',
+		get_posts(
+			array(
+				'post_type'      => 'pppd_report',
+				'post_status'    => 'publish',
+				'posts_per_page' => -1,
+				'fields'         => 'ids',
+				'meta_key'       => '_pppd_public', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
+				'meta_value'     => '1', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
+			)
+		)
+	);
+}
+
+/**
  * Frontend guard for single report views: anonymous visitors are sent to
  * log in; logged-in users without view access get an accessible 403.
+ * Reports flagged public skip the guard entirely.
  *
  * @return void
  */
 function pppd_guard_report_template() {
 	if ( ! is_singular( 'pppd_report' ) ) {
+		return;
+	}
+
+	if ( pppd_report_is_public( get_queried_object_id() ) ) {
 		return;
 	}
 
@@ -145,6 +237,10 @@ function pppd_guard_report_rest_single( $response, $handler, $request ) { // php
 		return $response;
 	}
 
+	if ( pppd_report_is_public( (int) $matches['id'] ) ) {
+		return $response;
+	}
+
 	if ( pppd_user_can_view_report( get_current_user_id(), (int) $matches['id'] ) ) {
 		return $response;
 	}
@@ -169,7 +265,14 @@ function pppd_scope_report_rest_collection( $args, $request ) { // phpcs:ignore 
 		return $args;
 	}
 
-	$viewable = pppd_get_viewable_report_ids( get_current_user_id() );
+	$viewable = array_values(
+		array_unique(
+			array_merge(
+				pppd_get_viewable_report_ids( get_current_user_id() ),
+				pppd_get_public_report_ids()
+			)
+		)
+	);
 
 	$args['post__in'] = empty( $viewable ) ? array( 0 ) : $viewable;
 
@@ -259,6 +362,10 @@ function pppd_rest_view_permission_check( $request ) {
 			__( 'Report not found.', 'pretty-professional-process-docs' ),
 			array( 'status' => 404 )
 		);
+	}
+
+	if ( pppd_report_is_public( $report->ID ) ) {
+		return true;
 	}
 
 	if ( ! pppd_user_can_view_report( get_current_user_id(), $report->ID ) ) {

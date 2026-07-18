@@ -255,7 +255,10 @@ function pppd_build_github_queue_item( $section ) {
 		'repo'       => (string) get_post_meta( $report_id, '_pppd_github_repo', true ),
 		'req_id'     => $req_id,
 		'title'      => trim( ( '' !== $req_id ? $req_id . ': ' : '' ) . get_the_title( $section ) ),
-		'content'    => (string) $section->post_content,
+		// Block-authored sections are rendered to plain HTML so issue bodies
+		// never carry <!-- wp:* --> serialization comments; raw-HTML sections
+		// pass through unchanged.
+		'content'    => has_blocks( $section->post_content ) ? trim( do_blocks( $section->post_content ) ) : (string) $section->post_content,
 		'acceptance' => is_array( $acceptance ) ? $acceptance : array(),
 		'labels'     => array_values(
 			array_filter(

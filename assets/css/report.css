@@ -173,11 +173,46 @@ section {
 	color: var(--ok);
 }
 
+/* Draft visibility (team view only): the flag text carries the meaning;
+   border, symbol, and wash are secondary cues — never color alone. */
+.pppd-draft-flag {
+	display: inline-block;
+	/* --warn (#8a4600) ≈ 6.7:1 on --wash (#f6f8fa) */
+	color: var(--warn);
+	border: 1.5px dashed currentcolor;
+	border-radius: 6px;
+	background: var(--wash);
+	padding: 0.375em 0.75em;
+	font-size: 0.9375rem;
+	margin: 0 0 1rem;
+}
+
+.pppd-section--unpublished {
+	border-left: 4px dashed var(--ink-soft);
+	padding-left: 1rem;
+}
+
+.pppd-view-notice {
+	border: 1px solid var(--rule);
+	border-left: 4px solid var(--warn);
+	border-radius: 6px;
+	background: var(--wash);
+	padding: 0.75rem 1rem;
+	margin: 1rem 0;
+	max-width: var(--max-line);
+}
+
 /* Tables */
 table {
 	border-collapse: collapse;
 	width: 100%;
 	font-size: 0.9375rem;
+}
+
+/* Core table blocks wrap tables in a figure; neutralize the UA's default
+   1em 40px figure margins so block and bare tables align identically. */
+figure.wp-block-table {
+	margin: 1rem 0;
 }
 
 caption {
