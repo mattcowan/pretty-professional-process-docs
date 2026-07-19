@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       Pretty Professional Process Docs
  * Description:       Living, agent-accessible functional requirements documents — wiki-style reports with revision history, review queues, drift tracking, and accessible exports.
- * Version:           0.3.0
+ * Version:           0.4.0
  * Requires at least: 6.4
  * Requires PHP:      8.0
  * Author:            Pretty Professional Process Docs Contributors
@@ -15,7 +15,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'PPPD_VERSION', '0.3.0' );
+define( 'PPPD_VERSION', '0.4.0' );
 
 // REST contract version (docs/rest-contract.md). Bumped only on breaking
 // changes to the surface the frd skill consumes; additions never bump it.

@@ -114,6 +114,26 @@ function pppd_authoring_statuses() {
 }
 
 /**
+ * The post statuses the front-end report render should include for the
+ * current viewer.
+ *
+ * Clients and anonymous visitors always get the publish-only document. Team
+ * viewers get the full authoring set — with every non-published section
+ * visibly flagged in the render — unless they asked to see the report exactly
+ * as a client sees it (pppd_is_client_preview()).
+ *
+ * @param int $report_id Report post ID (reserved for future per-report rules).
+ * @return string|string[]
+ */
+function pppd_report_render_statuses( $report_id = 0 ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.Found
+	if ( ! pppd_is_team_viewer() || pppd_is_client_preview() ) {
+		return 'publish';
+	}
+
+	return pppd_authoring_statuses();
+}
+
+/**
  * Build the authoring outline for a report: every section (all authoring
  * statuses) with depth, badges, edit links, and per-row movement flags for
  * the outline metabox / reorder endpoint.
@@ -278,6 +298,12 @@ function pppd_get_drift_items( $drift ) {
  * @return string Anchor id (unescaped; escape at the point of output).
  */
 function pppd_section_anchor( $section ) {
+	// Drafts have no slug until publish; fall back to the post ID so two
+	// draft sections in the team-view render never share a DOM id.
+	if ( '' === (string) $section->post_name ) {
+		return 'pppd-section-id-' . (int) $section->ID;
+	}
+
 	return 'pppd-section-' . $section->post_name;
 }
 

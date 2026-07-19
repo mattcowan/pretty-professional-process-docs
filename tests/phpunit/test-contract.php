@@ -74,7 +74,7 @@ class Test_Contract extends WP_UnitTestCase {
 		$expected = array(
 			'pppd_section' => array( '_pppd_report_id', '_pppd_req_id', '_pppd_acceptance', '_pppd_dev_prompt', '_pppd_impl_notes', '_pppd_internal', '_pppd_code_refs', '_pppd_test_refs', '_pppd_approved_by', '_pppd_approved_at', '_pppd_approved_revision', '_pppd_reapproval_source', '_pppd_github_status', '_pppd_github_issue_url', '_pppd_github_issue_number' ),
 			'pppd_change'  => array( '_pppd_target_section', '_pppd_source', '_pppd_rationale', '_pppd_reject_reason', '_pppd_applied_revision', '_pppd_reviewed_by', '_pppd_reviewed_at' ),
-			'pppd_report'  => array( '_pppd_repo_paths', '_pppd_req_prefix', '_pppd_req_counter', '_pppd_project_slug', '_pppd_pdf_url', '_pppd_assigned_user_ids', '_pppd_github_repo', '_pppd_github_trigger' ),
+			'pppd_report'  => array( '_pppd_repo_paths', '_pppd_req_prefix', '_pppd_req_counter', '_pppd_project_slug', '_pppd_pdf_url', '_pppd_assigned_user_ids', '_pppd_github_repo', '_pppd_github_trigger', '_pppd_public' ),
 			'pppd_drift'   => array( '_pppd_report_id', '_pppd_drift_json' ),
 		);
 
@@ -192,6 +192,56 @@ class Test_Contract extends WP_UnitTestCase {
 		}
 
 		$this->assertArrayHasKey( 'sections', $data );
+	}
+
+	public function test_outline_section_rows_carry_both_status_axes() {
+		$admin_id = self::factory()->user->create( array( 'role' => 'administrator' ) );
+
+		$report_id  = self::factory()->post->create(
+			array(
+				'post_type'   => 'pppd_report',
+				'post_status' => 'publish',
+			)
+		);
+		$section_id = self::factory()->post->create(
+			array(
+				'post_type'   => 'pppd_section',
+				'post_status' => 'publish',
+			)
+		);
+		update_post_meta( $section_id, '_pppd_report_id', $report_id );
+
+		wp_set_current_user( $admin_id );
+
+		$response = rest_get_server()->dispatch(
+			new WP_REST_Request( 'GET', '/pppd/v1/reports/' . $report_id . '/outline' )
+		);
+
+		$rows = $response->get_data()['sections'];
+
+		$this->assertCount( 1, $rows );
+		// Both axes: `status` is the pppd_status workflow term, `post_status`
+		// (additive, v0.4.0) is the WordPress publication state.
+		$this->assertArrayHasKey( 'status', $rows[0] );
+		$this->assertSame( 'publish', $rows[0]['post_status'] );
+	}
+
+	public function test_outline_rejects_invalid_status_values() {
+		$admin_id = self::factory()->user->create( array( 'role' => 'administrator' ) );
+
+		$report_id = self::factory()->post->create(
+			array(
+				'post_type'   => 'pppd_report',
+				'post_status' => 'publish',
+			)
+		);
+
+		wp_set_current_user( $admin_id );
+
+		$request = new WP_REST_Request( 'GET', '/pppd/v1/reports/' . $report_id . '/outline' );
+		$request->set_query_params( array( 'status' => 'bogus' ) );
+
+		$this->assertSame( 400, rest_get_server()->dispatch( $request )->get_status() );
 	}
 
 	public function test_change_approval_stamps_reviewer_timestamp_and_fires_hook() {

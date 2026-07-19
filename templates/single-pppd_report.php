@@ -16,10 +16,20 @@ while ( have_posts() ) :
 
 	$pppd_report        = get_post();
 	// Team-only sections are stripped for client viewers before grouping, so
-	// the TOC, section loop, and counts all agree on what is visible.
-	$pppd_section_posts = pppd_filter_visible_sections( pppd_get_report_section_posts( $pppd_report->ID ) );
+	// the TOC, section loop, and counts all agree on what is visible. Team
+	// viewers additionally see draft/pending sections (each flagged in the
+	// render) unless they switched to the client preview.
+	$pppd_section_posts = pppd_filter_visible_sections( pppd_get_report_section_posts( $pppd_report->ID, pppd_report_render_statuses( $pppd_report->ID ) ) );
 	$pppd_grouped       = pppd_group_sections_by_parent( $pppd_section_posts );
 	$pppd_sections      = pppd_flatten_section_tree( $pppd_grouped );
+	$pppd_draft_count   = count(
+		array_filter(
+			$pppd_section_posts,
+			static function ( $pppd_section_post ) {
+				return 'publish' !== $pppd_section_post->post_status;
+			}
+		)
+	);
 	$pppd_project_slug  = (string) get_post_meta( $pppd_report->ID, '_pppd_project_slug', true );
 	$pppd_pdf_url       = (string) get_post_meta( $pppd_report->ID, '_pppd_pdf_url', true );
 
@@ -91,8 +101,37 @@ while ( have_posts() ) :
 					<a class="btn" href="<?php echo esc_url( $pppd_csv_url ); ?>">
 						<?php esc_html_e( 'Download traceability CSV', 'pretty-professional-process-docs' ); ?>
 					</a>
+					<?php if ( pppd_is_client_preview() ) : ?>
+						<a class="btn" href="<?php echo esc_url( remove_query_arg( 'pppd_preview' ) ); ?>">
+							<?php esc_html_e( 'Back to team view (includes drafts)', 'pretty-professional-process-docs' ); ?>
+						</a>
+					<?php else : ?>
+						<a class="btn" href="<?php echo esc_url( add_query_arg( 'pppd_preview', 'published' ) ); ?>">
+							<?php esc_html_e( 'View as client sees it (published sections only)', 'pretty-professional-process-docs' ); ?>
+						</a>
+					<?php endif; ?>
 				<?php endif; ?>
 			</p>
+
+			<?php if ( pppd_is_team_viewer() && pppd_is_client_preview() ) : ?>
+				<p class="pppd-view-notice no-print">
+					<?php esc_html_e( 'Viewing as a client. Draft sections are hidden.', 'pretty-professional-process-docs' ); ?>
+					<a href="<?php echo esc_url( remove_query_arg( 'pppd_preview' ) ); ?>">
+						<?php esc_html_e( 'Back to team view', 'pretty-professional-process-docs' ); ?>
+					</a>
+				</p>
+			<?php elseif ( $pppd_draft_count > 0 ) : ?>
+				<p class="pppd-view-notice">
+					<strong><?php esc_html_e( 'Team view.', 'pretty-professional-process-docs' ); ?></strong>
+					<?php
+					printf(
+						/* translators: %d: number of draft sections. */
+						esc_html( _n( 'Includes %d draft section marked “Draft — not part of the signed document.” Clients see published sections only.', 'Includes %d draft sections marked “Draft — not part of the signed document.” Clients see published sections only.', $pppd_draft_count, 'pretty-professional-process-docs' ) ),
+						(int) $pppd_draft_count
+					);
+					?>
+				</p>
+			<?php endif; ?>
 		</header>
 
 		<section id="executive-summary" aria-labelledby="executive-summary-heading">

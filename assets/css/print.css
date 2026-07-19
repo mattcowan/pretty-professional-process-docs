@@ -87,4 +87,13 @@
 	.pppd-notice {
 		display: none !important;
 	}
+
+	/* A printed team copy must not silently look signed — the draft flag
+	   stays visible in print, in ink-safe black. */
+	.pppd-draft-flag,
+	.pppd-view-notice {
+		color: #000;
+		background: #fff !important;
+		border-color: #000;
+	}
 }

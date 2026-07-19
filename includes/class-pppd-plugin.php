@@ -57,6 +57,7 @@ final class PPPD_Plugin {
 		require_once PPPD_PLUGIN_DIR . 'includes/change-actions.php';
 		require_once PPPD_PLUGIN_DIR . 'includes/signoff.php';
 		require_once PPPD_PLUGIN_DIR . 'includes/content-quality.php';
+		require_once PPPD_PLUGIN_DIR . 'includes/block-patterns.php';
 		require_once PPPD_PLUGIN_DIR . 'includes/github-queue.php';
 		require_once PPPD_PLUGIN_DIR . 'includes/abilities.php';
 		require_once PPPD_PLUGIN_DIR . 'includes/rest/class-pppd-outline-controller.php';
@@ -88,6 +89,7 @@ final class PPPD_Plugin {
 		add_action( 'init', 'pppd_register_builtin_types', 5 );
 		add_action( 'init', array( $this, 'register_objects' ) );
 		add_action( 'init', 'pppd_registry_apply', 20 );
+		add_action( 'init', 'pppd_register_block_patterns' );
 
 		add_action( 'save_post_pppd_section', 'pppd_maybe_assign_requirement_id', 20, 3 );
 		add_action( 'rest_after_insert_pppd_section', 'pppd_maybe_assign_requirement_id_rest', 20 );

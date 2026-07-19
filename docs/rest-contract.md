@@ -84,6 +84,30 @@ Term IDs are never part of the contract — consumers fetch them per session.
 
 **Abilities (WP Abilities API, when available):** `pppd/get-outline` (the only `meta.mcp.public` ability; read-only, view-gated), `pppd/propose-change`, `pppd/get-github-queue`, `pppd/mark-issue-pushed` (all `edit_pppd_reports`, not MCP-exposed). Approve/sign-off/queue-for-github are deliberately **not** abilities — human-only surfaces, never AI-exposable.
 
+## v0.4.0 additions (additive) and permission tightenings
+
+**Contract version remains `1`** — every change below is additive (new optional parameter, new response key, stricter permissions). No existing key is renamed, removed, or retyped; callers that ignore the additions see the same responses as before.
+
+**The three status axes.** These were previously easy to conflate; they are distinct:
+
+| Axis | Where | Question it answers |
+|---|---|---|
+| `post_status` (WP) | section post; outline row `post_status` | Is this section part of the published document? (`draft` = written, reviewable, not yet part of it) |
+| `pppd_status` (taxonomy) | outline row `status`; the badge readers see | Workflow state: `draft` → `agreed` → `built` → `verified`, with `at-risk` as a flag |
+| `signoff.state` | outline row `signoff` | Legal record: `none` / `approved` / `stale` |
+
+**Outline `status` parameter (team-only):** `GET /reports/{id}/outline?status=…` accepts a CSV or array of `publish`, `draft`, `pending`, `future`, `private`. Default remains `publish` — existing callers are unaffected. Non-team callers (client members) who pass `status` get an explicit `403 pppd_forbidden_status`; invalid values are a core `400 rest_invalid_param`. This replaces the old workaround of enumerating drafts via `wp/v2/pppd-sections?status=draft` + client-side meta filtering.
+
+**Outline row `post_status` (additive):** each section row now carries its WordPress `post_status` alongside the `pppd_status` term in `status`, so consumers can distinguish the two axes.
+
+**Draft rendering rule:** team viewers (`edit_pppd_reports`) see non-published sections in the front-end report render, each flagged "Draft — not part of the signed document"; `?pppd_preview=published` shows a team viewer the exact client view. Clients and anonymous visitors always get the publish-only document.
+
+**Permission tightening (security fix, same category as the v0.3.0 tightenings):** outline section rows are now filtered through the same internal-section rule as the front-end template — non-team callers no longer receive rows for `_pppd_internal` sections. Previously a client member could read internal sections' titles, req IDs, and sign-off state via the outline.
+
+**Item-ID minting is unchanged and now explicit:** `_pppd_req_id` mints on **first publish** only. Draft reading/previewing never mints; a publish → draft → publish round-trip keeps the existing ID and counter.
+
+**New registered meta:** `pppd_report._pppd_public` (bool, **human-only write** — `pppd_approve_changes`; the agent role can never expose a report). When a **published** report carries the flag, anonymous visitors may read it: the front-end template guard, `wp/v2/pppd-reports/{id}`, the scoped collection, and the outline route all open up — but readers still receive only published, non-internal sections, the outline `status` param stays team-only, and site search continues to exclude reports (public = reachable by URL, not discoverable).
+
 ## Behavioral invariants
 
 1. **Item IDs are server-assigned** on first publish of a section whose type bears IDs; never reassigned or reused. For `requirement` sections the counter is the report's `_pppd_req_counter` and the prefix is the report's `_pppd_req_prefix` when explicitly set, else the report type's scheme (`FR` for FRDs) — byte-identical to pre-registry behavior for existing reports.
