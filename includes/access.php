@@ -28,6 +28,14 @@ function pppd_access_init() {
 	add_filter( 'rest_request_before_callbacks', 'pppd_guard_report_rest_single', 10, 3 );
 	add_filter( 'rest_pppd_report_query', 'pppd_scope_report_rest_collection', 10, 2 );
 	add_action( 'admin_bar_menu', 'pppd_admin_bar_preview_link', 90 );
+
+	// Public-report-ID cache: request-scoped even on persistent object caches,
+	// and invalidated on flag/status changes so it can never serve stale IDs.
+	wp_cache_add_non_persistent_groups( array( 'pppd' ) );
+	add_action( 'added_post_meta', 'pppd_maybe_flush_public_ids_on_meta', 10, 3 );
+	add_action( 'updated_post_meta', 'pppd_maybe_flush_public_ids_on_meta', 10, 3 );
+	add_action( 'deleted_post_meta', 'pppd_maybe_flush_public_ids_on_meta', 10, 3 );
+	add_action( 'transition_post_status', 'pppd_maybe_flush_public_ids_on_status', 10, 3 );
 }
 
 /**
@@ -142,10 +150,20 @@ function pppd_report_is_public( $report_id ) {
 /**
  * All public report IDs (for scoping collection reads).
  *
+ * Cached per request in the non-persistent `pppd` cache group (anonymous
+ * collection reads hit this); invalidated when `_pppd_public` changes or a
+ * report changes status — see pppd_flush_public_report_ids_cache().
+ *
  * @return int[]
  */
 function pppd_get_public_report_ids() {
-	return array_map(
+	$cached = wp_cache_get( 'public_report_ids', 'pppd' );
+
+	if ( is_array( $cached ) ) {
+		return $cached;
+	}
+
+	$ids = array_map(
 		'intval',
 		get_posts(
 			array(
@@ -158,6 +176,49 @@ function pppd_get_public_report_ids() {
 			)
 		)
 	);
+
+	wp_cache_set( 'public_report_ids', $ids, 'pppd' );
+
+	return $ids;
+}
+
+/**
+ * Drop the cached public-report-ID list when the flag or a report's status
+ * changes. Hooked to the `_pppd_public` meta events and to report status
+ * transitions (publish gates the flag, so status changes matter too).
+ *
+ * @return void
+ */
+function pppd_flush_public_report_ids_cache() {
+	wp_cache_delete( 'public_report_ids', 'pppd' );
+}
+
+/**
+ * Invalidation shim for meta hooks: flush only for the `_pppd_public` key.
+ *
+ * @param int|int[] $meta_ids  Meta row ID(s) (unused).
+ * @param int       $object_id Post ID (unused).
+ * @param string    $meta_key  Meta key that changed.
+ * @return void
+ */
+function pppd_maybe_flush_public_ids_on_meta( $meta_ids, $object_id, $meta_key ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.Found
+	if ( '_pppd_public' === $meta_key ) {
+		pppd_flush_public_report_ids_cache();
+	}
+}
+
+/**
+ * Invalidation shim for status transitions: flush for reports only.
+ *
+ * @param string  $new_status New status (unused).
+ * @param string  $old_status Old status (unused).
+ * @param WP_Post $post       Post.
+ * @return void
+ */
+function pppd_maybe_flush_public_ids_on_status( $new_status, $old_status, $post ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.Found
+	if ( $post instanceof WP_Post && 'pppd_report' === $post->post_type ) {
+		pppd_flush_public_report_ids_cache();
+	}
 }
 
 /**

@@ -178,16 +178,34 @@ def split_top_level(raw):
     return parser.chunks
 
 
+class _StartTagAttrs(HTMLParser):
+    """Capture the attribute list of the first start tag fed in."""
+
+    def __init__(self):
+        super().__init__()
+        self.found = None
+
+    def handle_starttag(self, tag, attrs):
+        if self.found is None:
+            self.found = attrs
+
+
 def tag_attrs(start_tag_text):
-    """Attribute names present in a raw start tag."""
-    inner = start_tag_text.strip("<>").rstrip("/")
-    parts = inner.split(None, 1)
-    if len(parts) < 2:
+    """Attributes present in a raw start tag (name -> value; '' for bare attrs).
+
+    Parsed with HTMLParser rather than a regex so nothing slips through: names
+    with digits/underscores/colons/dots (data-foo1, aria-describedby, xml:lang)
+    and valueless boolean attributes (hidden) all count. Missing an attribute
+    here would let the converter rebuild the tag without it.
+    """
+    parser = _StartTagAttrs()
+    parser.feed(start_tag_text)
+    parser.close()
+
+    if not parser.found:
         return {}
-    attrs = {}
-    for match in re.finditer(r'([a-zA-Z-]+)\s*=\s*("([^"]*)"|\'([^\']*)\'|(\S+))', parts[1]):
-        attrs[match.group(1).lower()] = match.group(3) or match.group(4) or match.group(5) or ""
-    return attrs
+
+    return {name.lower(): ("" if value is None else value) for name, value in parser.found}
 
 
 # ---------------------------------------------------------------------------
@@ -248,11 +266,16 @@ def convert_list(outer, stats):
 
 def convert_chunk(kind, tag, start_text, outer, inner, stats):
     if kind == "text":
-        text = outer.strip()
-        if re.search(r"<[a-zA-Z]", text):
-            return wp_html(text, stats)
+        # Any '<' at all (tags, comments like <!-- marker -->, doctypes, even a
+        # stray unescaped less-than) keeps the RAW slice — including its
+        # leading/trailing whitespace — so the wp:html fallback stays
+        # byte-preserving. Only pure prose becomes a paragraph.
+        if "<" in outer:
+            return wp_html(outer, stats)
+        # Bare prose only: wpautop would have wrapped it; trimming here is the
+        # deliberate wpautop-equivalent, not a fidelity loss.
         stats["wp:paragraph"] += 1
-        return f"<!-- wp:paragraph -->\n<p>{text}</p>\n<!-- /wp:paragraph -->"
+        return f"<!-- wp:paragraph -->\n<p>{outer.strip()}</p>\n<!-- /wp:paragraph -->"
 
     attrs = tag_attrs(start_text)
 
