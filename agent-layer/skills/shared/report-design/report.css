@@ -1,0 +1,294 @@
+/* Report Design Language — screen styles. Contract: report-design.md */
+
+:root {
+	--ink: #1f2328;
+	--ink-soft: #59626b;
+	--link: #0b57d0;
+	--rule: #d0d7de;
+	--wash: #f6f8fa;
+	--ok: #0f6f2f;
+	--info: #0b57d0;
+	--warn: #8a4600;
+	--built: #5a3ea6;
+	--muted: #59626b;
+	--max-line: 72ch;
+}
+
+* {
+	box-sizing: border-box;
+}
+
+html {
+	scroll-behavior: smooth;
+}
+
+body {
+	margin: 0;
+	color: var(--ink);
+	background: #fff;
+	font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+	font-size: 1.0625rem;
+	line-height: 1.6;
+}
+
+/* Skip link: visually hidden until focused */
+.skip-link {
+	position: absolute;
+	left: -9999px;
+	top: 0;
+	background: var(--ink);
+	color: #fff;
+	padding: 0.75rem 1.25rem;
+	z-index: 100;
+}
+
+.skip-link:focus {
+	left: 0;
+}
+
+a {
+	color: var(--link);
+	text-decoration: underline;
+	text-underline-offset: 0.15em;
+}
+
+:focus-visible {
+	outline: 2px solid var(--link);
+	outline-offset: 2px;
+	border-radius: 2px;
+}
+
+h1,
+h2,
+h3,
+h4 {
+	line-height: 1.25;
+	margin: 2em 0 0.5em;
+}
+
+h1 {
+	font-size: 2rem;
+	margin-top: 0;
+}
+
+h2 {
+	font-size: 1.5rem;
+	padding-bottom: 0.25em;
+	border-bottom: 1px solid var(--rule);
+}
+
+h3 {
+	font-size: 1.2rem;
+}
+
+p,
+ul,
+ol {
+	max-width: var(--max-line);
+}
+
+.report-meta,
+figcaption,
+caption {
+	color: var(--ink-soft);
+	font-size: 0.9375rem;
+}
+
+/* Layout: sidebar TOC on wide screens */
+.report-shell {
+	max-width: 76rem;
+	margin: 0 auto;
+	padding: 1.5rem;
+}
+
+@media (min-width: 64rem) {
+	.report-shell {
+		display: grid;
+		grid-template-columns: 17rem minmax(0, 1fr);
+		gap: 3rem;
+	}
+
+	.report-toc {
+		position: sticky;
+		top: 1.5rem;
+		align-self: start;
+		max-height: calc(100vh - 3rem);
+		overflow-y: auto;
+	}
+}
+
+.report-toc {
+	font-size: 0.9375rem;
+	border: 1px solid var(--rule);
+	border-radius: 8px;
+	padding: 1rem 1.25rem;
+	background: var(--wash);
+}
+
+.report-toc ol {
+	margin: 0;
+	padding-left: 1.25rem;
+}
+
+.report-toc li {
+	margin: 0.35em 0;
+}
+
+section {
+	margin-bottom: 2.5rem;
+}
+
+/* Status badges: text + symbol + border, never color alone */
+.badge {
+	display: inline-block;
+	font-size: 0.8125rem;
+	font-weight: 600;
+	line-height: 1;
+	padding: 0.375em 0.625em;
+	border: 1.5px solid currentcolor;
+	border-radius: 999px;
+	background: #fff;
+	white-space: nowrap;
+	vertical-align: middle;
+}
+
+.badge--draft {
+	color: var(--muted);
+}
+
+.badge--agreed {
+	color: var(--info);
+}
+
+.badge--at-risk {
+	color: var(--warn);
+	border-style: dashed;
+}
+
+.badge--built {
+	color: var(--built);
+}
+
+.badge--verified {
+	color: var(--ok);
+}
+
+/* Tables */
+table {
+	border-collapse: collapse;
+	width: 100%;
+	font-size: 0.9375rem;
+}
+
+caption {
+	text-align: left;
+	padding-bottom: 0.5em;
+}
+
+th,
+td {
+	border: 1px solid var(--rule);
+	padding: 0.5em 0.75em;
+	text-align: left;
+	vertical-align: top;
+}
+
+thead th {
+	background: var(--wash);
+}
+
+.table-scroll {
+	overflow-x: auto;
+	max-width: 100%;
+}
+
+.table-scroll:focus-visible {
+	outline: 2px solid var(--link);
+	outline-offset: 2px;
+}
+
+/* Callouts (friction flags, notes, evidence) */
+.callout {
+	border: 1px solid var(--rule);
+	border-left: 4px solid var(--ink-soft);
+	border-radius: 6px;
+	background: var(--wash);
+	padding: 0.75rem 1rem;
+	margin: 1rem 0;
+	max-width: var(--max-line);
+}
+
+.callout--risk {
+	border-left-color: var(--warn);
+}
+
+.callout--evidence {
+	border-left-color: var(--info);
+}
+
+blockquote {
+	margin: 1rem 0;
+	padding: 0.25rem 0 0.25rem 1rem;
+	border-left: 3px solid var(--rule);
+	color: var(--ink-soft);
+	max-width: var(--max-line);
+}
+
+code,
+pre {
+	font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+	font-size: 0.875em;
+	background: var(--wash);
+	border: 1px solid var(--rule);
+	border-radius: 4px;
+}
+
+code {
+	padding: 0.1em 0.35em;
+}
+
+pre {
+	padding: 0.75rem 1rem;
+	overflow-x: auto;
+}
+
+pre code {
+	background: none;
+	border: 0;
+	padding: 0;
+}
+
+/* Real controls (print button, CSV links styled as buttons) */
+.btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-height: 44px;
+	min-width: 44px;
+	padding: 0.5rem 1.25rem;
+	border: 1.5px solid var(--ink);
+	border-radius: 6px;
+	background: #fff;
+	color: var(--ink);
+	font: inherit;
+	font-weight: 600;
+	text-decoration: none;
+	cursor: pointer;
+}
+
+.btn:hover {
+	background: var(--wash);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	html {
+		scroll-behavior: auto;
+	}
+
+	*,
+	*::before,
+	*::after {
+		transition: none !important;
+		animation: none !important;
+	}
+}

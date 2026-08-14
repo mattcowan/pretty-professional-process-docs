@@ -1,5 +1,24 @@
 # PPPD tools
 
+## make-pot.php
+
+Regenerates `languages/pretty-professional-process-docs.pot` from the plugin's
+translatable strings.
+
+```sh
+php tools/make-pot.php
+```
+
+`wp i18n make-pot . languages/pretty-professional-process-docs.pot` is the
+canonical tool and should be preferred where WP-CLI is available; this script
+exists so the POT stays regenerable without it. It tokenizes the PHP with
+`token_get_all()` (not regex), covers the full `__`/`_e`/`_x`/`_n`/`_noop`
+family plus the `esc_html_*` / `esc_attr_*` wrappers, carries `translators:`
+comments through, and skips any call whose text domain isn't this plugin's.
+`agent-layer/`, `tools/`, `tests/`, and `vendor/` are not scanned.
+
+Run it after adding or changing any user-facing string.
+
 ## migrate-to-blocks.py
 
 One-time, reversible migration of `pppd_section` content from raw HTML to core

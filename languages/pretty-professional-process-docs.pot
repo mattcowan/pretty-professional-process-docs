@@ -1,0 +1,1115 @@
+# Copyright (C) 2026 Pretty Professional Process Docs
+# This file is distributed under the GPL-2.0-or-later license.
+msgid ""
+msgstr ""
+"Project-Id-Version: Pretty Professional Process Docs\n"
+"Report-Msgid-Bugs-To: https://github.com/mattcowan/pretty-professional-process-docs/issues\n"
+"POT-Creation-Date: 2026-08-13 01:08+0000\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Generator: tools/make-pot.php\n"
+"X-Domain: pretty-professional-process-docs\n"
+
+#: includes/abilities.php:108
+msgid "Propose a section change"
+msgstr ""
+
+#: includes/abilities.php:109
+msgid "File a pending pppd_change proposal against a published section. Never edits content directly; a human reviews and approves in the Review Queue."
+msgstr ""
+
+#: includes/abilities.php:142
+msgid "Get the GitHub push queue"
+msgstr ""
+
+#: includes/abilities.php:143
+msgid "Approved, signed-off sections a dev/PM flagged ready to become GitHub issues."
+msgstr ""
+
+#: includes/abilities.php:180
+msgid "Mark a queued item pushed"
+msgstr ""
+
+#: includes/abilities.php:181
+msgid "Record the GitHub issue created for a queued section (queued → pushed; idempotent, never double-pushes)."
+msgstr ""
+
+#: includes/abilities.php:233
+msgid "Target section not found."
+msgstr ""
+
+#: includes/abilities.php:243
+msgid "Proposed change: %s"
+msgstr ""
+
+#: includes/abilities.php:48
+#: includes/block-patterns.php:30
+#: includes/post-types.php:38
+msgid "Process Docs"
+msgstr ""
+
+#: includes/abilities.php:49
+msgid "Agent-facing operations on living process documents: reading outlines, proposing changes, and working the GitHub push queue. Approval and sign-off are human-only and deliberately absent."
+msgstr ""
+
+#: includes/abilities.php:67
+msgid "Get report outline"
+msgstr ""
+
+#: includes/abilities.php:68
+msgid "The section tree of a process-docs report: types, statuses, item IDs, comment counts, and sign-off state. Call before proposing any change; sections with signoff.state \"approved\" are read-only for agents."
+msgstr ""
+
+#: includes/abilities.php:75
+msgid "Report post ID."
+msgstr ""
+
+#: includes/abilities.php:86
+#: includes/access.php:423
+#: includes/rest/class-pppd-drift-controller.php:89
+#: includes/rest/class-pppd-reorder-controller.php:81
+#: includes/rest/class-pppd-traceability-controller.php:75
+msgid "Report not found."
+msgstr ""
+
+#: includes/access.php:249
+msgid "This report belongs to another client. If you believe you should have access, ask the project team to add you."
+msgstr ""
+
+#: includes/access.php:250
+msgid "Report access restricted"
+msgstr ""
+
+#: includes/access.php:311
+#: includes/access.php:435
+msgid "You are not allowed to view this report."
+msgstr ""
+
+#: includes/access.php:78
+#: templates/single-pppd_report.php:106
+msgid "Back to team view (includes drafts)"
+msgstr ""
+
+#: includes/access.php:79
+msgid "View as client (published only)"
+msgstr ""
+
+#: includes/admin/class-pppd-list-columns.php:107
+msgid "Target Section"
+msgstr ""
+
+#: includes/admin/class-pppd-list-columns.php:108
+#: includes/post-types.php:190
+msgid "Status"
+msgstr ""
+
+#: includes/admin/class-pppd-list-columns.php:149
+msgid "Pending review"
+msgstr ""
+
+#: includes/admin/class-pppd-list-columns.php:150
+msgid "Approved"
+msgstr ""
+
+#: includes/admin/class-pppd-list-columns.php:151
+#: includes/post-types.php:140
+msgid "Rejected"
+msgstr ""
+
+#: includes/admin/class-pppd-list-columns.php:70
+#: includes/admin/class-pppd-list-columns.php:169
+#: includes/post-types.php:31
+msgid "Report"
+msgstr ""
+
+#: includes/admin/class-pppd-list-columns.php:71
+msgid "Req ID"
+msgstr ""
+
+#: includes/admin/class-pppd-meta-boxes.php:115
+msgid "Repository paths"
+msgstr ""
+
+#: includes/admin/class-pppd-meta-boxes.php:117
+msgid "One path per line. Used by drift tooling to know which code this report traces against."
+msgstr ""
+
+#: includes/admin/class-pppd-meta-boxes.php:121
+msgid "Requirement ID prefix"
+msgstr ""
+
+#: includes/admin/class-pppd-meta-boxes.php:123
+msgid "Default: FR. New requirement sections get IDs like FR-001."
+msgstr ""
+
+#: includes/admin/class-pppd-meta-boxes.php:126
+msgid "Project slug"
+msgstr ""
+
+#: includes/admin/class-pppd-meta-boxes.php:128
+msgid "Machine-friendly identifier for tooling (lowercase, hyphens)."
+msgstr ""
+
+#: includes/admin/class-pppd-meta-boxes.php:131
+msgid "Requirement counter"
+msgstr ""
+
+#. translators: %d: current requirement counter.
+#: includes/admin/class-pppd-meta-boxes.php:135
+msgid "Currently at %d. Managed automatically — IDs are never reassigned or reused."
+msgstr ""
+
+#: includes/admin/class-pppd-meta-boxes.php:148
+msgid "GitHub repository"
+msgstr ""
+
+#: includes/admin/class-pppd-meta-boxes.php:150
+msgid "Where approved items become issues (owner/name). The plugin stores no GitHub credential — issues are created by the agent on its next run."
+msgstr ""
+
+#: includes/admin/class-pppd-meta-boxes.php:153
+msgid "GitHub queue trigger"
+msgstr ""
+
+#: includes/admin/class-pppd-meta-boxes.php:157
+msgid "A dev/PM marks approved items ready to push (default)"
+msgstr ""
+
+#: includes/admin/class-pppd-meta-boxes.php:161
+msgid "Client sign-off queues the item automatically"
+msgstr ""
+
+#: includes/admin/class-pppd-meta-boxes.php:169
+msgid "Publicly visible"
+msgstr ""
+
+#: includes/admin/class-pppd-meta-boxes.php:171
+msgid "Anonymous visitors can read this report once it is published — published, non-internal sections only. Use for work samples; leave off for client documents."
+msgstr ""
+
+#: includes/admin/class-pppd-meta-boxes.php:254
+msgid "Parent report"
+msgstr ""
+
+#: includes/admin/class-pppd-meta-boxes.php:256
+msgid "— None —"
+msgstr ""
+
+#: includes/admin/class-pppd-meta-boxes.php:265
+msgid "Requirement ID"
+msgstr ""
+
+#: includes/admin/class-pppd-meta-boxes.php:267
+msgid "(assigned automatically; never changes)"
+msgstr ""
+
+#: includes/admin/class-pppd-meta-boxes.php:274
+#: templates/partials/requirement-meta.php:40
+msgid "Acceptance criteria"
+msgstr ""
+
+#: includes/admin/class-pppd-meta-boxes.php:276
+msgid "One criterion per line."
+msgstr ""
+
+#: includes/admin/class-pppd-meta-boxes.php:281
+msgid "Implementation notes (internal)"
+msgstr ""
+
+#: includes/admin/class-pppd-meta-boxes.php:283
+msgid "Dev/agent hand-off context. Never shown on the client-facing report view or in client exports."
+msgstr ""
+
+#: includes/admin/class-pppd-meta-boxes.php:289
+msgid "Team-only section"
+msgstr ""
+
+#: includes/admin/class-pppd-meta-boxes.php:291
+msgid "Hide this entire section (body, discussion, table of contents entry) from client viewers. The team still sees it."
+msgstr ""
+
+#: includes/admin/class-pppd-meta-boxes.php:297
+msgid "Code references"
+msgstr ""
+
+#: includes/admin/class-pppd-meta-boxes.php:299
+msgid "One file/symbol reference per line."
+msgstr ""
+
+#: includes/admin/class-pppd-meta-boxes.php:304
+msgid "Test references"
+msgstr ""
+
+#: includes/admin/class-pppd-meta-boxes.php:306
+msgid "One test reference per line."
+msgstr ""
+
+#: includes/admin/class-pppd-meta-boxes.php:33
+msgid "Report Settings"
+msgstr ""
+
+#: includes/admin/class-pppd-meta-boxes.php:400
+msgid "Target section"
+msgstr ""
+
+#: includes/admin/class-pppd-meta-boxes.php:402
+msgid "— Select a section —"
+msgstr ""
+
+#: includes/admin/class-pppd-meta-boxes.php:413
+msgid "Unassigned sections"
+msgstr ""
+
+#: includes/admin/class-pppd-meta-boxes.php:42
+msgid "Section Settings"
+msgstr ""
+
+#: includes/admin/class-pppd-meta-boxes.php:422
+msgid "Source"
+msgstr ""
+
+#: includes/admin/class-pppd-meta-boxes.php:424
+msgid "Where this change came from — e.g. a meeting or document identifier."
+msgstr ""
+
+#: includes/admin/class-pppd-meta-boxes.php:427
+msgid "Rationale"
+msgstr ""
+
+#: includes/admin/class-pppd-meta-boxes.php:51
+msgid "Change Settings"
+msgstr ""
+
+#: includes/admin/class-pppd-report-outline.php:100
+msgid "Edit section"
+msgstr ""
+
+#: includes/admin/class-pppd-report-outline.php:101
+msgid "Moving…"
+msgstr ""
+
+#: includes/admin/class-pppd-report-outline.php:102
+msgid "The move failed. The outline has not changed."
+msgstr ""
+
+#: includes/admin/class-pppd-report-outline.php:125
+msgid "The full report body lives in these sections, in this order. Use the move buttons (keyboard accessible) to restructure; edit a section to change its content."
+msgstr ""
+
+#: includes/admin/class-pppd-report-outline.php:129
+msgid "No sections yet — add the first one below."
+msgstr ""
+
+#: includes/admin/class-pppd-report-outline.php:153
+msgid "(no title)"
+msgstr ""
+
+#: includes/admin/class-pppd-report-outline.php:217
+msgid "Add section:"
+msgstr ""
+
+#: includes/admin/class-pppd-report-outline.php:300
+msgid "Not attached to a report yet — pick one in Section Settings below."
+msgstr ""
+
+#: includes/admin/class-pppd-report-outline.php:307
+msgid "The attached report no longer exists."
+msgstr ""
+
+#: includes/admin/class-pppd-report-outline.php:332
+msgid "Report document navigation"
+msgstr ""
+
+#: includes/admin/class-pppd-report-outline.php:334
+msgid "Part of:"
+msgstr ""
+
+#. translators: %s: previous section title.
+#: includes/admin/class-pppd-report-outline.php:347
+msgid "← Previous: %s"
+msgstr ""
+
+#. translators: %s: next section title.
+#: includes/admin/class-pppd-report-outline.php:358
+msgid "Next: %s →"
+msgstr ""
+
+#: includes/admin/class-pppd-report-outline.php:368
+msgid "View on report"
+msgstr ""
+
+#: includes/admin/class-pppd-report-outline.php:38
+msgid "Report Sections"
+msgstr ""
+
+#: includes/admin/class-pppd-report-outline.php:47
+msgid "Report Navigation"
+msgstr ""
+
+#: includes/admin/class-pppd-report-outline.php:96
+#: includes/admin/class-pppd-report-outline.php:156
+msgid "Move up"
+msgstr ""
+
+#: includes/admin/class-pppd-report-outline.php:97
+#: includes/admin/class-pppd-report-outline.php:157
+msgid "Move down"
+msgstr ""
+
+#: includes/admin/class-pppd-report-outline.php:98
+#: includes/admin/class-pppd-report-outline.php:158
+msgid "Indent (nest under previous section)"
+msgstr ""
+
+#: includes/admin/class-pppd-report-outline.php:99
+#: includes/admin/class-pppd-report-outline.php:159
+msgid "Outdent (move to parent level)"
+msgstr ""
+
+#: includes/admin/class-pppd-review-queue.php:109
+msgid "Current"
+msgstr ""
+
+#: includes/admin/class-pppd-review-queue.php:110
+msgid "Proposed"
+msgstr ""
+
+#. translators: 1: author name, 2: date.
+#: includes/admin/class-pppd-review-queue.php:121
+msgid "Proposed by %1$s on %2$s."
+msgstr ""
+
+#: includes/admin/class-pppd-review-queue.php:129
+msgid "Source:"
+msgstr ""
+
+#: includes/admin/class-pppd-review-queue.php:132
+msgid "Rationale:"
+msgstr ""
+
+#: includes/admin/class-pppd-review-queue.php:135
+msgid "Target section:"
+msgstr ""
+
+#: includes/admin/class-pppd-review-queue.php:139
+msgid "Missing or invalid — this change cannot be approved."
+msgstr ""
+
+#: includes/admin/class-pppd-review-queue.php:147
+msgid "No textual difference between current and proposed content."
+msgstr ""
+
+#: includes/admin/class-pppd-review-queue.php:155
+msgid "Approve"
+msgstr ""
+
+#: includes/admin/class-pppd-review-queue.php:162
+msgid "Reason (optional):"
+msgstr ""
+
+#: includes/admin/class-pppd-review-queue.php:164
+msgid "Reject"
+msgstr ""
+
+#: includes/admin/class-pppd-review-queue.php:250
+msgid "Change approved and applied to the target section."
+msgstr ""
+
+#: includes/admin/class-pppd-review-queue.php:255
+msgid "Change rejected."
+msgstr ""
+
+#: includes/admin/class-pppd-review-queue.php:262
+msgid "The action could not be completed."
+msgstr ""
+
+#: includes/admin/class-pppd-review-queue.php:43
+#: includes/admin/class-pppd-review-queue.php:44
+#: includes/admin/class-pppd-review-queue.php:87
+msgid "Review Queue"
+msgstr ""
+
+#: includes/admin/class-pppd-review-queue.php:73
+#: includes/admin/class-pppd-review-queue.php:184
+#: includes/admin/class-pppd-review-queue.php:203
+#: includes/rest/class-pppd-changes-controller.php:79
+msgid "You are not allowed to review proposed changes."
+msgstr ""
+
+#: includes/admin/class-pppd-review-queue.php:88
+msgid "Pending proposed changes awaiting human review. Approving copies the proposed content onto the target section (a revision is kept)."
+msgstr ""
+
+#: includes/admin/class-pppd-review-queue.php:91
+msgid "The queue is empty — nothing awaiting review."
+msgstr ""
+
+#: includes/block-patterns.php:36
+msgid "PPPD: Narrative section"
+msgstr ""
+
+#: includes/block-patterns.php:37
+msgid "Context prose: what the reader needs to understand before the requirements."
+msgstr ""
+
+#: includes/block-patterns.php:41
+msgid "One idea per paragraph. Say what is true today, then what this document changes."
+msgstr ""
+
+#: includes/block-patterns.php:46
+msgid "Key point readers should retain."
+msgstr ""
+
+#: includes/block-patterns.php:55
+msgid "PPPD: Requirement section"
+msgstr ""
+
+#: includes/block-patterns.php:56
+msgid "What must exist and why. Acceptance criteria belong in the Section settings box, not in the content."
+msgstr ""
+
+#: includes/block-patterns.php:60
+msgid "What must exist, in one or two sentences, followed by the one-sentence WHY."
+msgstr ""
+
+#: includes/block-patterns.php:64
+msgid "Reminder: acceptance criteria, code refs, and test refs live in the Section settings meta box — the requirement ID and criteria render below the content automatically. Do not repeat them here."
+msgstr ""
+
+#: includes/block-patterns.php:72
+msgid "PPPD: Decision section"
+msgstr ""
+
+#: includes/block-patterns.php:73
+msgid "A choice that was made: what was decided, by which role, when, and why."
+msgstr ""
+
+#: includes/block-patterns.php:77
+msgid "Decided:"
+msgstr ""
+
+#: includes/block-patterns.php:77
+msgid "the choice, in one sentence."
+msgstr ""
+
+#: includes/block-patterns.php:82
+msgid "Owner (role, never a personal name) and date."
+msgstr ""
+
+#: includes/block-patterns.php:86
+msgid "Why this option won, and what was ruled out."
+msgstr ""
+
+#: includes/capabilities.php:107
+msgid "Published sections can only be modified through the proposed-change review workflow."
+msgstr ""
+
+#: includes/capabilities.php:68
+msgid "Process Docs Agent"
+msgstr ""
+
+#: includes/change-actions.php:162
+msgid "Only pending changes can be rejected."
+msgstr ""
+
+#: includes/change-actions.php:48
+#: includes/change-actions.php:154
+msgid "Proposed change not found."
+msgstr ""
+
+#: includes/change-actions.php:56
+msgid "Only pending changes can be approved."
+msgstr ""
+
+#: includes/change-actions.php:67
+msgid "The target section for this change no longer exists."
+msgstr ""
+
+#: includes/change-actions.php:78
+msgid "The target section is not attached to a valid report."
+msgstr ""
+
+#: includes/class-pppd-registry.php:265
+#: includes/post-types.php:263
+msgid "Narrative"
+msgstr ""
+
+#: includes/class-pppd-registry.php:272
+#: includes/post-types.php:264
+#: templates/partials/drift-summary.php:38
+msgid "Requirement"
+msgstr ""
+
+#: includes/class-pppd-registry.php:311
+#: includes/post-types.php:265
+msgid "Decision"
+msgstr ""
+
+#: includes/class-pppd-registry.php:319
+msgid "Data Requirement"
+msgstr ""
+
+#: includes/class-pppd-registry.php:349
+msgid "UI Rule"
+msgstr ""
+
+#: includes/class-pppd-registry.php:379
+msgid "Functional Requirements Document"
+msgstr ""
+
+#: includes/class-pppd-registry.php:392
+msgid "User Access Model"
+msgstr ""
+
+#: includes/class-pppd-registry.php:405
+msgid "Change Order"
+msgstr ""
+
+#: includes/class-pppd-registry.php:418
+msgid "Content Strategy"
+msgstr ""
+
+#. translators: 1: report type slug, 2: ID prefix, 3: first section type slug, 4: second section type slug.
+#: includes/class-pppd-registry.php:587
+msgid "Report type \"%1$s\" offers two ID-bearing section types (\"%3$s\" and \"%4$s\") that both resolve to the ID prefix \"%2$s\"; their independent counters would issue colliding item IDs."
+msgstr ""
+
+#: includes/clients.php:216
+msgid "Process Docs client"
+msgstr ""
+
+#: includes/clients.php:219
+msgid "Client membership"
+msgstr ""
+
+#: includes/clients.php:222
+msgid "Clients this user belongs to"
+msgstr ""
+
+#: includes/clients.php:229
+msgid "Members can view every report belonging to the client on the client-facing view."
+msgstr ""
+
+#: includes/frontend/comments.php:60
+msgid "Security check failed. Please go back and try again."
+msgstr ""
+
+#: includes/frontend/comments.php:61
+msgid "Comment blocked"
+msgstr ""
+
+#: includes/frontend/uploads.php:67
+msgid "You are not allowed to upload files."
+msgstr ""
+
+#: includes/frontend/uploads.php:68
+#: includes/frontend/uploads.php:82
+msgid "Upload blocked"
+msgstr ""
+
+#: includes/frontend/uploads.php:81
+msgid "Invalid section."
+msgstr ""
+
+#: includes/github-queue.php:147
+msgid "The section is not attached to a report."
+msgstr ""
+
+#: includes/github-queue.php:151
+msgid "The report has no target GitHub repository configured."
+msgstr ""
+
+#: includes/github-queue.php:157
+msgid "Only sections with a current sign-off can be queued for GitHub."
+msgstr ""
+
+#: includes/github-queue.php:161
+msgid "This section is already queued or pushed."
+msgstr ""
+
+#: includes/github-queue.php:197
+msgid "Queuing for GitHub is limited to the project team."
+msgstr ""
+
+#: includes/github-queue.php:203
+msgid "The request could not be verified — please go back and try again."
+msgstr ""
+
+#: includes/github-queue.php:330
+#: includes/rest/class-pppd-reorder-controller.php:91
+#: includes/signoff.php:144
+msgid "Section not found."
+msgstr ""
+
+#: includes/github-queue.php:334
+msgid "Only queued sections can be marked pushed."
+msgstr ""
+
+#: includes/github-queue.php:340
+msgid "A valid issue URL is required."
+msgstr ""
+
+#: includes/github-queue.php:348
+msgid "A positive issue number is required."
+msgstr ""
+
+#: includes/post-types.php:111
+msgid "Drift Runs"
+msgstr ""
+
+#: includes/post-types.php:112
+msgid "Drift Run"
+msgstr ""
+
+#: includes/post-types.php:113
+msgid "Add New Drift Run"
+msgstr ""
+
+#: includes/post-types.php:114
+msgid "Edit Drift Run"
+msgstr ""
+
+#: includes/post-types.php:115
+msgid "Search Drift Runs"
+msgstr ""
+
+#: includes/post-types.php:116
+msgid "No drift runs found."
+msgstr ""
+
+#: includes/post-types.php:147
+msgid "Rejected <span class=\"count\">(%s)</span>"
+msgid_plural "Rejected <span class=\"count\">(%s)</span>"
+msgstr[0] ""
+msgstr[1] ""
+
+#: includes/post-types.php:167
+msgid "Section Types"
+msgstr ""
+
+#: includes/post-types.php:168
+msgid "Section Type"
+msgstr ""
+
+#: includes/post-types.php:189
+msgid "Statuses"
+msgstr ""
+
+#: includes/post-types.php:213
+msgid "Report Types"
+msgstr ""
+
+#: includes/post-types.php:214
+msgid "Report Type"
+msgstr ""
+
+#: includes/post-types.php:238
+msgid "Clients"
+msgstr ""
+
+#: includes/post-types.php:239
+msgid "Client"
+msgstr ""
+
+#: includes/post-types.php:275
+#: templates/partials/section.php:31
+msgid "Draft"
+msgstr ""
+
+#: includes/post-types.php:276
+msgid "Agreed"
+msgstr ""
+
+#: includes/post-types.php:277
+msgid "At risk"
+msgstr ""
+
+#: includes/post-types.php:278
+msgid "Built"
+msgstr ""
+
+#: includes/post-types.php:279
+msgid "Verified"
+msgstr ""
+
+#: includes/post-types.php:30
+msgid "Reports"
+msgstr ""
+
+#: includes/post-types.php:32
+msgid "Add New Report"
+msgstr ""
+
+#: includes/post-types.php:33
+msgid "Edit Report"
+msgstr ""
+
+#: includes/post-types.php:34
+msgid "New Report"
+msgstr ""
+
+#: includes/post-types.php:35
+msgid "View Report"
+msgstr ""
+
+#: includes/post-types.php:36
+msgid "Search Reports"
+msgstr ""
+
+#: includes/post-types.php:37
+msgid "No reports found."
+msgstr ""
+
+#: includes/post-types.php:59
+msgid "Sections"
+msgstr ""
+
+#: includes/post-types.php:60
+msgid "Section"
+msgstr ""
+
+#: includes/post-types.php:61
+msgid "Add New Section"
+msgstr ""
+
+#: includes/post-types.php:62
+msgid "Edit Section"
+msgstr ""
+
+#: includes/post-types.php:63
+msgid "New Section"
+msgstr ""
+
+#: includes/post-types.php:64
+msgid "Search Sections"
+msgstr ""
+
+#: includes/post-types.php:65
+msgid "No sections found."
+msgstr ""
+
+#: includes/post-types.php:66
+msgid "Parent Section:"
+msgstr ""
+
+#: includes/post-types.php:88
+msgid "Proposed Changes"
+msgstr ""
+
+#: includes/post-types.php:89
+msgid "Proposed Change"
+msgstr ""
+
+#: includes/post-types.php:90
+msgid "Add New Proposed Change"
+msgstr ""
+
+#: includes/post-types.php:91
+msgid "Edit Proposed Change"
+msgstr ""
+
+#: includes/post-types.php:92
+msgid "Search Proposed Changes"
+msgstr ""
+
+#: includes/post-types.php:93
+msgid "No proposed changes found."
+msgstr ""
+
+#: includes/rest/class-pppd-drift-controller.php:107
+msgid "You are not allowed to record drift runs."
+msgstr ""
+
+#: includes/rest/class-pppd-drift-controller.php:128
+msgid "You are not allowed to read drift runs."
+msgstr ""
+
+#: includes/rest/class-pppd-drift-controller.php:150
+msgid "The drift summary must be a string."
+msgstr ""
+
+#: includes/rest/class-pppd-drift-controller.php:158
+msgid "Drift items must be an array."
+msgstr ""
+
+#: includes/rest/class-pppd-drift-controller.php:170
+msgid "Drift item %d is not an object."
+msgstr ""
+
+#: includes/rest/class-pppd-drift-controller.php:182
+msgid "Drift item %1$d has an invalid verdict. Allowed: %2$s."
+msgstr ""
+
+#: includes/rest/class-pppd-drift-controller.php:204
+msgid "Drift run %s"
+msgstr ""
+
+#: includes/rest/class-pppd-drift-controller.php:248
+msgid "No drift runs recorded for this report yet."
+msgstr ""
+
+#: includes/rest/class-pppd-github-controller.php:91
+msgid "You are not allowed to work the GitHub queue."
+msgstr ""
+
+#: includes/rest/class-pppd-outline-controller.php:74
+msgid "Only team users may request unpublished sections."
+msgstr ""
+
+#: includes/rest/class-pppd-reorder-controller.php:100
+msgid "That section does not belong to this report."
+msgstr ""
+
+#: includes/rest/class-pppd-reorder-controller.php:207
+msgid "The section is already at that edge of its group."
+msgstr ""
+
+#. translators: 1: section title, 2: new position, 3: group size.
+#: includes/rest/class-pppd-reorder-controller.php:220
+msgid "Moved “%1$s” to position %2$d of %3$d."
+msgstr ""
+
+#: includes/rest/class-pppd-reorder-controller.php:239
+msgid "The first section of a group cannot be indented — it has no preceding sibling to nest under."
+msgstr ""
+
+#. translators: 1: section title, 2: new parent section title.
+#: includes/rest/class-pppd-reorder-controller.php:265
+msgid "Indented “%1$s” under “%2$s”."
+msgstr ""
+
+#: includes/rest/class-pppd-reorder-controller.php:284
+msgid "Top-level sections cannot be outdented."
+msgstr ""
+
+#. translators: 1: section title, 2: former parent section title.
+#: includes/rest/class-pppd-reorder-controller.php:320
+msgid "Moved “%1$s” out to the level of “%2$s”."
+msgstr ""
+
+#: includes/rest/class-pppd-reorder-controller.php:71
+msgid "You are not allowed to reorder report sections."
+msgstr ""
+
+#: includes/rest/class-pppd-traceability-controller.php:65
+msgid "You are not allowed to read traceability data."
+msgstr ""
+
+#: includes/signoff.php:148
+msgid "Only published sections can be approved."
+msgstr ""
+
+#: includes/signoff.php:187
+msgid "Your approval could not be verified — please go back and try again."
+msgstr ""
+
+#: includes/signoff.php:193
+msgid "You do not have access to this report."
+msgstr ""
+
+#: templates/partials/comments.php:24
+msgid "Discussion"
+msgstr ""
+
+#: templates/partials/comments.php:41
+msgid "No comments yet."
+msgstr ""
+
+#. translators: %s: section title.
+#: templates/partials/comments.php:51
+msgid "Comment on “%s”"
+msgstr ""
+
+#: templates/partials/comments.php:61
+msgid "Post comment"
+msgstr ""
+
+#: templates/partials/comments.php:66
+msgid "Log in to join the discussion."
+msgstr ""
+
+#: templates/partials/drift-summary.php:18
+msgid "Latest drift check"
+msgstr ""
+
+#. translators: %s: drift run date.
+#: templates/partials/drift-summary.php:24
+msgid "Recorded %s"
+msgstr ""
+
+#: templates/partials/drift-summary.php:35
+msgid "Per-requirement drift verdicts"
+msgstr ""
+
+#: templates/partials/drift-summary.php:39
+msgid "Verdict"
+msgstr ""
+
+#: templates/partials/drift-summary.php:40
+msgid "Notes"
+msgstr ""
+
+#: templates/partials/requirement-meta.php:23
+msgid "Requirement ID:"
+msgstr ""
+
+#. translators: %s: requirement ID.
+#: templates/partials/requirement-meta.php:36
+msgid "Acceptance criteria for %s"
+msgstr ""
+
+#: templates/partials/requirement-meta.php:46
+msgid "#"
+msgstr ""
+
+#: templates/partials/requirement-meta.php:47
+msgid "Criterion"
+msgstr ""
+
+#: templates/partials/requirement-meta.php:64
+msgid "Implementation notes (internal — not shown to clients)"
+msgstr ""
+
+#: templates/partials/requirement-meta.php:66
+msgid "Implementation notes"
+msgstr ""
+
+#: templates/partials/section.php:32
+msgid "— not part of the signed document"
+msgstr ""
+
+#. translators: %s: section title.
+#: templates/partials/signoff.php:118
+msgid "Re-approve “%s”"
+msgstr ""
+
+#. translators: %s: section title.
+#: templates/partials/signoff.php:124
+msgid "Approve “%s”"
+msgstr ""
+
+#. translators: 1: approver display name, 2: local date/time.
+#: templates/partials/signoff.php:40
+msgid "Approved by %1$s on %2$s."
+msgstr ""
+
+#: templates/partials/signoff.php:41
+#: templates/partials/signoff.php:53
+msgid "a removed user"
+msgstr ""
+
+#. translators: 1: approver display name, 2: local date/time.
+#: templates/partials/signoff.php:52
+msgid "Changed since approval — re-approval required. Previously approved by %1$s on %2$s."
+msgstr ""
+
+#. translators: %d: proposed-change post ID.
+#: templates/partials/signoff.php:61
+msgid "(Invalidated by approved change #%d.)"
+msgstr ""
+
+#. translators: %d: GitHub issue number.
+#: templates/partials/signoff.php:80
+msgid "GitHub issue #%d"
+msgstr ""
+
+#: templates/partials/signoff.php:88
+msgid "Queued for GitHub — the issue will be created on the next agent run."
+msgstr ""
+
+#. translators: %s: section title.
+#: templates/partials/signoff.php:99
+msgid "Queue “%s” for GitHub"
+msgstr ""
+
+#: templates/partials/toc.php:12
+msgid "Contents"
+msgstr ""
+
+#: templates/partials/toc.php:14
+#: templates/single-pppd_report.php:138
+msgid "Executive summary"
+msgstr ""
+
+#: templates/partials/uploads.php:34
+msgid "Attachments"
+msgstr ""
+
+#: templates/partials/uploads.php:38
+msgid "File uploaded."
+msgstr ""
+
+#: templates/partials/uploads.php:40
+msgid "The file could not be uploaded. Check the type and size, then try again."
+msgstr ""
+
+#: templates/partials/uploads.php:63
+msgid "No attachments yet."
+msgstr ""
+
+#: templates/partials/uploads.php:72
+msgid "Attach a file"
+msgstr ""
+
+#: templates/partials/uploads.php:75
+msgid "Upload"
+msgstr ""
+
+#: templates/single-pppd_report.php:102
+msgid "Download traceability CSV"
+msgstr ""
+
+#: templates/single-pppd_report.php:110
+msgid "View as client sees it (published sections only)"
+msgstr ""
+
+#: templates/single-pppd_report.php:118
+msgid "Viewing as a client. Draft sections are hidden."
+msgstr ""
+
+#: templates/single-pppd_report.php:120
+msgid "Back to team view"
+msgstr ""
+
+#: templates/single-pppd_report.php:125
+msgid "Team view."
+msgstr ""
+
+#: templates/single-pppd_report.php:129
+msgid "Includes %d draft section marked “Draft — not part of the signed document.” Clients see published sections only."
+msgid_plural "Includes %d draft sections marked “Draft — not part of the signed document.” Clients see published sections only."
+msgstr[0] ""
+msgstr[1] ""
+
+#: templates/single-pppd_report.php:51
+msgid "Skip to content"
+msgstr ""
+
+#. translators: %s: project slug.
+#: templates/single-pppd_report.php:66
+msgid "Project: %s"
+msgstr ""
+
+#. translators: %s: last modified date.
+#: templates/single-pppd_report.php:75
+msgid "Last updated %s"
+msgstr ""
+
+#: templates/single-pppd_report.php:83
+msgid "%d section"
+msgid_plural "%d sections"
+msgstr[0] ""
+msgstr[1] ""
+
+#: templates/single-pppd_report.php:92
+msgid "Download accessible PDF"
+msgstr ""
+
+#: templates/single-pppd_report.php:97
+msgid "Print / Save as PDF"
+msgstr ""

@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sample Report — Design Language Fixture</title>
+<!-- Fixture only: real deliverables must INLINE both stylesheets to stay self-contained. -->
+<link rel="stylesheet" href="report.css">
+<link rel="stylesheet" href="print.css">
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<div class="report-shell">
+	<nav class="report-toc" aria-label="Contents">
+		<ol>
+			<li><a href="#overview">Overview</a></li>
+			<li><a href="#requirements">Requirements</a>
+				<ol>
+					<li><a href="#fr-001">FR-001 Example requirement</a></li>
+				</ol>
+			</li>
+			<li><a href="#evidence">Evidence &amp; sources</a></li>
+		</ol>
+	</nav>
+	<main id="main">
+		<header>
+			<h1>Sample Report</h1>
+			<p class="report-meta">Generated fixture · exercises every design-language pattern · 2026</p>
+			<!-- Accessible-PDF control: link to the exporter's tagged sibling PDF.
+			     window.print() is NOT an accessible path (untagged output) — see
+			     report-design.md. If no tagged PDF exists, fall back to an
+			     honestly-labelled "Print / Save as PDF" button instead. -->
+			<p class="no-print"><a class="btn" href="sample.pdf" download>Download accessible PDF</a></p>
+		</header>
+
+		<section id="overview" aria-labelledby="overview-h">
+			<h2 id="overview-h">Overview</h2>
+			<p>This fixture verifies the report design language: landmarks, heading order,
+			skip link, status badges, tables, callouts, and print rules. Short sentences.
+			As simple as possible, and no simpler.</p>
+			<p>Statuses:
+				<span class="badge badge--draft"><span aria-hidden="true">◌</span> Draft</span>
+				<span class="badge badge--agreed"><span aria-hidden="true">●</span> Agreed</span>
+				<span class="badge badge--at-risk"><span aria-hidden="true">▲</span> At risk</span>
+				<span class="badge badge--built"><span aria-hidden="true">■</span> Built</span>
+				<span class="badge badge--verified"><span aria-hidden="true">✔</span> Verified</span>
+			</p>
+			<div class="callout callout--risk">
+				<p><strong>Friction flag.</strong> The client expects X; the build plan says Y.
+				Resolve before the next milestone.</p>
+			</div>
+		</section>
+
+		<section id="requirements" aria-labelledby="requirements-h">
+			<h2 id="requirements-h">Requirements</h2>
+			<section id="fr-001" aria-labelledby="fr-001-h">
+				<h3 id="fr-001-h">FR-001 Example requirement <span class="badge badge--built"><span aria-hidden="true">■</span> Built</span></h3>
+				<p>The system stores each requirement with a stable identifier that survives
+				reordering and renaming.</p>
+				<div class="table-scroll" role="region" aria-label="Acceptance criteria for FR-001" tabindex="0">
+					<table>
+						<caption>Acceptance criteria for FR-001</caption>
+						<thead>
+							<tr><th scope="col">#</th><th scope="col">Criterion</th><th scope="col">Verified by</th></tr>
+						</thead>
+						<tbody>
+							<tr><th scope="row">1</th><td>ID assigned on first publish</td><td>Unit test</td></tr>
+							<tr><th scope="row">2</th><td>ID never reused after deletion</td><td>Unit test</td></tr>
+						</tbody>
+					</table>
+				</div>
+				<div class="callout callout--evidence">
+					<p><strong>Developer prompt.</strong> <code>Implement FR-001: assign a stable
+					ID on first publish using a per-report counter…</code></p>
+				</div>
+			</section>
+		</section>
+
+		<section id="evidence" aria-labelledby="evidence-h">
+			<h2 id="evidence-h">Evidence &amp; sources</h2>
+			<blockquote>
+				<p>“Every claim traces to a source; inference is marked as inference.”</p>
+			</blockquote>
+			<p>External reference: <a href="https://example.com/spec">example spec</a>.</p>
+		</section>
+
+		<footer>
+			<p class="report-meta">End of sample report.</p>
+		</footer>
+	</main>
+</div>
+</body>
+</html>

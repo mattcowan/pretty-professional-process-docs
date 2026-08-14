@@ -1,10 +1,24 @@
+# Dependencies
 node_modules/
-.DS_Store
-*.log
 vendor/
 composer.lock
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+*.log
+
+# Local Claude Code settings — machine-specific, never shared.
+# Do not rely on a global gitignore for this: forks and contributors won't have one.
+.claude/settings.local.json
+
+# Test + tooling artifacts
 tests/phpunit/wp-tests-config.php
 .phpunit.result.cache
 .playwright-mcp/
 playwright-profile/
 tools/backups/
+
+# Python build artifacts (bytecode embeds the absolute path it was compiled from)
+__pycache__/
+*.py[cod]

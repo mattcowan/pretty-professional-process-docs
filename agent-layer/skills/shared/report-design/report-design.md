@@ -1,0 +1,135 @@
+# Report Design Language
+
+The shared contract for every generated report (audit reports, FRD exports, and
+the PPPD plugin front-end). Any skill or tool that renders a report consumes
+this file plus `report.css` / `print.css` / `export-pdf.mjs` from this
+directory. `sample.html` is the canonical example and test fixture; for
+maintainability it links the local `report.css` / `print.css` rather than
+inlining them. The self-contained rule below governs generated *deliverables*,
+not this fixture.
+
+Goals, in order: WCAG 2.1 AA, print/PDF parity, zero build step, client-agnostic.
+
+## Document structure
+
+- One `<h1>` per document. Heading levels never skip (h1 → h2 → h3).
+- Landmarks: `<header>`, `<nav aria-label="Contents">` (the TOC), `<main id="main">`,
+  `<footer>`. Exactly one `<main>`.
+- First focusable element is a skip link: `<a class="skip-link" href="#main">Skip to content</a>`.
+- Every report section is a `<section aria-labelledby="{heading-id}">` with a
+  stable, human-readable `id` (used for TOC links, comments, deep links).
+- `<html lang="en">`, `<title>` = report title, `<meta name="viewport" content="width=device-width, initial-scale=1">`.
+- Self-contained (generated deliverables): CSS inlined in `<style>` (screen + print), no external requests,
+  no JavaScript required to read the document. JS, when present, is progressive
+  enhancement only.
+
+## Table of contents
+
+- `<nav aria-label="Contents">` containing a single `<ol>` (nested `<ol>` for
+  subsections) of same-page links.
+- Wide screens: sidebar column. Narrow screens and print: in-flow after the header.
+
+## Status vocabulary
+
+Fixed set, shared with the PPPD plugin taxonomy:
+
+| Status | Symbol | Meaning |
+|---|---|---|
+| Draft | ◌ | Written, not yet reviewed |
+| Agreed | ● | Reviewed and accepted by both sides |
+| At risk | ▲ | Expectation mismatch / open question / friction flag |
+| Built | ■ | Implemented, not yet verified |
+| Verified | ✔ | Implemented and verified against acceptance criteria |
+
+Status is always conveyed as **text + symbol + shape** (a bordered badge) —
+never color alone. Badge markup:
+
+```html
+<span class="badge badge--at-risk"><span aria-hidden="true">▲</span> At risk</span>
+```
+
+## Color tokens (all AA-checked on white)
+
+| Token | Value | Contrast on #fff | Use |
+|---|---|---|---|
+| `--ink` | `#1f2328` | 15.4:1 | Body text |
+| `--ink-soft` | `#59626b` | 5.7:1 | Secondary text, captions |
+| `--link` | `#0b57d0` | 6.9:1 | Links (underlined, always) |
+| `--rule` | `#d0d7de` | n/a (non-text) | Borders, rules |
+| `--wash` | `#f6f8fa` | n/a | Section tint backgrounds |
+| `--ok` | `#0f6f2f` | 6.6:1 | Verified badge text/border |
+| `--info` | `#0b57d0` | 6.9:1 | Agreed badge |
+| `--warn` | `#8a4600` | 6.4:1 | At-risk badge |
+| `--built` | `#5a3ea6` | 7.0:1 | Built badge |
+| `--muted` | `#59626b` | 5.7:1 | Draft badge |
+
+Body text on `--wash` backgrounds still clears 4.5:1. Never introduce a color
+without recording its measured contrast here.
+
+## Tables
+
+- Real `<table>` with `<caption>`, `<thead>`, `<th scope="col">` /
+  `<th scope="row">`. No layout tables, no divs pretending.
+- Wide tables wrap in `<div class="table-scroll" role="region" aria-label="{caption}" tabindex="0">`
+  so keyboard users can scroll them; the page body never scrolls horizontally.
+- Any table offered as CSV keeps identical column headers in both formats.
+
+## Interaction rules (screen only)
+
+- `:focus-visible` outline: 2px solid `--link`, 2px offset. Never `outline: none`.
+- Touch targets ≥ 44×44 CSS px for real controls (print/PDF buttons, uploads).
+- `prefers-reduced-motion: reduce` disables all transitions/animations and
+  smooth scrolling.
+- Links are underlined; color is never the only affordance.
+- Form-control boundaries (inputs, textareas) use `--ink-soft` or darker —
+  WCAG 1.4.11 needs ≥ 3:1 for the field's extent; `--rule` (1.45:1) is for
+  decorative dividers only, never form borders.
+
+## Print / PDF rules (see print.css)
+
+- `@page` margin 20mm; A4-friendly (also fine on US Letter).
+- `.no-print` hides interactive chrome (buttons, upload slots, comment forms).
+- `h2/h3` avoid page-break after; sections, tables, figures, badges avoid
+  break-inside where reasonable.
+- External link URLs are printed after the link text via `::after`.
+- Black-on-white text; wash backgrounds drop to white with borders retained.
+
+## PDF export recipe
+
+Semantic HTML is the accessibility source; the PDF inherits it as tags.
+
+1. Render/save the final self-contained HTML.
+2. `node export-pdf.mjs <input.html|url> <output.pdf> [--login user:apppass]`
+   — Chromium `page.pdf({ tagged: true, outline: true })`.
+3. The script fails loudly unless the output contains `/StructTreeRoot` and
+   `/Marked true` (tag structure present).
+4. Acceptance bar: screen-reader-navigable tagged PDF (headings, reading order,
+   alt text, table structure). Not certified PDF/UA.
+
+### The "Download PDF" control must download the tagged file — never print
+
+`window.print()` is NOT an accessible-PDF path: the browser's print-to-PDF is
+not guaranteed to emit a tag tree, so a screen-reader user gets an untagged,
+non-navigable document — the opposite of the point.
+
+- **Primary action**: a real download link to the exporter's tagged PDF
+  (`<a class="btn" href="report.pdf" download>Download accessible PDF</a>`).
+  Generate that sibling PDF with step 2 above.
+- **Fallback only**: if no tagged PDF exists yet, you may offer a
+  `window.print()` button, but label it honestly ("Print / Save as PDF") —
+  never call it "Download PDF" or imply accessibility it can't deliver.
+- Standalone generated reports link to their sibling `*.pdf`. The PPPD plugin
+  front-end links to the report's stored `_pppd_pdf_url` when set, and shows
+  the honest print fallback otherwise.
+
+Anything visual with meaning needs a text equivalent (`alt`, or `figcaption` +
+`aria-hidden` on decorative SVG). Decorative symbols inside badges are
+`aria-hidden` because the status name is already text.
+
+## Writing style (applies to generated report prose)
+
+- Short, concrete sentences. As simple as possible, and no simpler.
+- Client names may appear in report CONTENT only — never in tooling, code,
+  file names, or this design system.
+- Every claim in a generated report traces to a source (git, doc, meeting,
+  interview answer); mark inference as inference.
