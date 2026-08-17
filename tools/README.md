@@ -16,24 +16,41 @@ exists so the POT stays regenerable without it. It tokenizes the PHP with
 family plus the `esc_html_*` / `esc_attr_*` wrappers, carries `translators:`
 comments through (attached by line, so a comment above a wrapped call such as
 `esc_html( _n( … ) )` or an array value `'x' => _n_noop( … )` still lands),
-emits `#, php-format` so `msgfmt --check-format` can validate placeholder
-integrity, and skips any call whose text domain isn't this plugin's.
-`agent-layer/`, `tools/`, `tests/`, `languages/`, `node_modules/`, and
-`vendor/` are not scanned.
+emits `#, php-format` on every string carrying a printf placeholder, and skips
+any call whose text domain isn't this plugin's.
+
+Directories not scanned — keep this list identical to `$skip_dirs` in the
+script: `.git/`, `agent-layer/`, `languages/`, `node_modules/`, `tests/`,
+`tools/`, `vendor/`.
 
 Run it after adding or changing any user-facing string.
 
 **It exits non-zero and names the file and line whenever the POT would be
 incomplete** — an unreadable source file, a non-literal msgid, a missing text
 domain, or a failed/short write. A green exit means the POT on disk is
-complete; treat a red one as "do not commit this POT". Verify with:
+complete; treat a red one as "do not commit this POT".
 
 ```sh
 php tools/make-pot.php && msgfmt --check -o /dev/null languages/*.pot
 ```
 
-Known gap versus WP-CLI: JavaScript and block-editor strings are not extracted
-— this plugin has none today (its JS ships no translatable text), but if that
+That second command checks the POT's **syntax**, and nothing more. It cannot
+check placeholders: `--check` does imply `--check-format`, but a POT's every
+`msgstr` is empty, and gettext treats an untranslated entry as nothing to
+validate. The `#, php-format` flags this script writes are for later — they
+travel into each translator's `.po`, and the check that matters runs when those
+are compiled:
+
+```sh
+msgfmt --check -o /dev/null languages/pretty-professional-process-docs-fr_FR.po
+```
+
+That is what rejects a translation which drops or reorders `%1$s` / `%2$s`
+before it reaches `printf()` at runtime.
+
+Known gap versus WP-CLI: JavaScript and block-editor strings are not extracted.
+This plugin has none today — `assets/js/*.js` contains no `wp.i18n`, `__()`, or
+`_n()` call, and no script declares `wp-i18n` as a dependency — but if that
 changes, switch to `wp i18n make-pot`.
 
 ## migrate-to-blocks.py

@@ -342,7 +342,7 @@ function unquote( string $raw ): string {
 				return chr( (int) hexdec( substr( $seq, 1 ) ) );
 			}
 			if ( 'u' === $seq[0] ) {
-				return mb_chr( (int) hexdec( trim( substr( $seq, 1 ), '{}' ) ), 'UTF-8' );
+				return utf8_codepoint( (int) hexdec( trim( substr( $seq, 1 ), '{}' ) ) );
 			}
 			if ( 1 === preg_match( '/^[0-7]{1,3}$/', $seq ) ) {
 				return chr( (int) octdec( $seq ) );
@@ -375,6 +375,37 @@ function translator_comment( array $comments_by_line, int $line, array &$claimed
 		}
 	}
 	return null;
+}
+
+/**
+ * Encode a Unicode code point as UTF-8, without mbstring.
+ *
+ * mb_chr() would be the obvious call, but mbstring is not a guaranteed
+ * extension and this script has to run wherever someone checks the repo out —
+ * a missing extension must not turn a `\u{…}` escape into a fatal.
+ *
+ * @param int $cp Code point.
+ * @return string UTF-8 bytes, or '' for an out-of-range value.
+ */
+function utf8_codepoint( int $cp ): string {
+	if ( $cp < 0 || $cp > 0x10FFFF || ( $cp >= 0xD800 && $cp <= 0xDFFF ) ) {
+		return ''; // Out of range or a surrogate half — not encodable.
+	}
+	if ( $cp < 0x80 ) {
+		return chr( $cp );
+	}
+	if ( $cp < 0x800 ) {
+		return chr( 0xC0 | ( $cp >> 6 ) ) . chr( 0x80 | ( $cp & 0x3F ) );
+	}
+	if ( $cp < 0x10000 ) {
+		return chr( 0xE0 | ( $cp >> 12 ) )
+			. chr( 0x80 | ( ( $cp >> 6 ) & 0x3F ) )
+			. chr( 0x80 | ( $cp & 0x3F ) );
+	}
+	return chr( 0xF0 | ( $cp >> 18 ) )
+		. chr( 0x80 | ( ( $cp >> 12 ) & 0x3F ) )
+		. chr( 0x80 | ( ( $cp >> 6 ) & 0x3F ) )
+		. chr( 0x80 | ( $cp & 0x3F ) );
 }
 
 /**

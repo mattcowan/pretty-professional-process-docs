@@ -69,9 +69,16 @@
 						</tbody>
 					</table>
 				</div>
-				<div class="callout callout--evidence">
-					<p><strong>Developer prompt.</strong> <code>Implement FR-001: assign a stable
-					ID on first publish using a per-report counter…</code></p>
+				<!--
+					Internal-only block. Mirrors templates/partials/requirement-meta.php:
+					it renders for team viewers ONLY and is absent from the client view.
+					The visibility is carried by the explicit label, not by styling — copy
+					both, or internal notes leak into a client-facing report.
+				-->
+				<div class="callout callout--evidence pppd-internal-only">
+					<p><strong>Implementation notes (internal — not shown to clients)</strong></p>
+					<pre tabindex="0" role="region" aria-label="Implementation notes"><code>Implement FR-001: assign a stable
+ID on first publish using a per-report counter…</code></pre>
 				</div>
 			</section>
 		</section>

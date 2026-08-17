@@ -83,6 +83,49 @@ canonical "just passes AA" grey.
   so keyboard users can scroll them; the page body never scrolls horizontally.
 - Any table offered as CSV keeps identical column headers in both formats.
 
+## Callouts and internal-only content
+
+Two callout variants exist in `report.css`, and no others:
+
+| Class | Use |
+|---|---|
+| `.callout--risk` | An unresolved risk or open question. |
+| `.callout--evidence` | A citation, a source quote, or supporting detail. |
+
+Each is a `<div class="callout callout--{variant}">` wrapping block content, and
+each opens with a `<strong>` label naming what it is. The label is the meaning
+— the border and tint are decoration, so a callout must read correctly with CSS
+off.
+
+**Internal-only blocks.** Some content renders for the team but never for the
+client — implementation notes are the standing example (`_pppd_impl_notes`;
+the older client-facing `_pppd_dev_prompt` was retired in plugin 0.3.0 and must
+not be used). Mark these with `pppd-internal-only` alongside the callout
+classes, and state the visibility in the label itself:
+
+```html
+<div class="callout callout--evidence pppd-internal-only">
+  <p><strong>Implementation notes (internal — not shown to clients)</strong></p>
+  <pre tabindex="0" role="region" aria-label="Implementation notes"><code>…</code></pre>
+</div>
+```
+
+Two things this depends on, both deliberate:
+
+- **The visibility is carried by the label text, not by the class.**
+  `pppd-internal-only` is currently a semantic hook with no styling — a team
+  viewer sees an ordinary callout. The words are what tell them it is internal,
+  which also means it survives CSS being off, a print stylesheet, and a
+  screen reader. Never rely on a visual treatment to signal "internal".
+- **Gating is the server's job, not the stylesheet's.** The block must not be
+  emitted at all for a client — see `templates/partials/requirement-meta.php`,
+  which reads the meta only when `pppd_is_team_viewer()`. A CSS-hidden internal
+  block is still in the HTML, and still in the exported PDF.
+
+Long `<pre>` blocks scroll horizontally, so they take `tabindex="0"` plus a
+`role="region"` and an accessible name — keyboard users must be able to reach
+and scroll them (WCAG 2.1.1).
+
 ## Interaction rules (screen only)
 
 - `:focus-visible` outline: 2px solid `--link`, 2px offset. Never `outline: none`.

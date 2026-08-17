@@ -7,7 +7,7 @@ Living, agent-accessible functional requirements documents (FRDs) for WordPress 
 | | What it is | Where |
 |---|---|---|
 | **The plugin** | Storage, access control, the approval gate, the REST API, and the accessible front end. Standalone — no build step, no runtime dependencies. | this directory |
-| **The agent layer** *(optional)* | Claude Code skills that author and maintain the documents: generating a report from source material, running stakeholder interviews, reconciling a spec against a codebase, pushing an approved queue to GitHub, exporting tagged PDFs. | [`agent-layer/`](agent-layer/) — **must be copied into `~/.claude/skills/`**; see [`agent-layer/README.md`](agent-layer/README.md) |
+| **The agent layer** *(optional)* | Claude Code skills that author and maintain the documents: generating a report from source material, running stakeholder interviews, reconciling a spec against a codebase, pushing an approved queue to GitHub, exporting tagged PDFs. | [`agent-layer/skills/`](agent-layer/skills/) — copy its **contents** into `~/.claude/skills/`, not the `agent-layer/` folder itself: `cp -r agent-layer/skills/* ~/.claude/skills/`. Full instructions in [`agent-layer/README.md`](agent-layer/README.md) |
 
 You can use the plugin entirely through wp-admin, or drive `pppd/v1` from any
 tooling you like. The agent layer is what automates the authoring, and it is
