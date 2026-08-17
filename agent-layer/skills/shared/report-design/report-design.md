@@ -52,19 +52,28 @@ never color alone. Badge markup:
 
 | Token | Value | Contrast on #fff | Use |
 |---|---|---|---|
-| `--ink` | `#1f2328` | 15.4:1 | Body text |
-| `--ink-soft` | `#59626b` | 5.7:1 | Secondary text, captions |
-| `--link` | `#0b57d0` | 6.9:1 | Links (underlined, always) |
-| `--rule` | `#d0d7de` | n/a (non-text) | Borders, rules |
-| `--wash` | `#f6f8fa` | n/a | Section tint backgrounds |
-| `--ok` | `#0f6f2f` | 6.6:1 | Verified badge text/border |
-| `--info` | `#0b57d0` | 6.9:1 | Agreed badge |
-| `--warn` | `#8a4600` | 6.4:1 | At-risk badge |
-| `--built` | `#5a3ea6` | 7.0:1 | Built badge |
-| `--muted` | `#59626b` | 5.7:1 | Draft badge |
+| `--ink` | `#1f2328` | 15.80:1 | Body text |
+| `--ink-soft` | `#59626b` | 6.21:1 | Secondary text, captions |
+| `--link` | `#0b57d0` | 6.39:1 | Links (underlined, always) |
+| `--rule` | `#d0d7de` | 1.45:1 (non-text) | Borders, rules — decorative dividers only |
+| `--wash` | `#f6f8fa` | 1.06:1 (background) | Section tint backgrounds |
+| `--ok` | `#0f6f2f` | 6.30:1 | Verified badge text/border |
+| `--info` | `#0b57d0` | 6.39:1 | Agreed badge |
+| `--warn` | `#8a4600` | 7.10:1 | At-risk badge |
+| `--built` | `#5a3ea6` | 7.85:1 | Built badge |
+| `--muted` | `#59626b` | 6.21:1 | Draft badge |
 
-Body text on `--wash` backgrounds still clears 4.5:1. Never introduce a color
-without recording its measured contrast here.
+Every text token clears 4.5:1 (AA normal text); `--ink`, `--warn`, and `--built`
+also clear 7:1 (AAA). Body text on `--wash` backgrounds still clears 4.5:1.
+
+**Never introduce a color without recording its measured contrast here, and
+measure it — don't estimate.** Ratios are computed with the WCAG 2.x
+relative-luminance formula against `#ffffff`; sRGB channels are linearised
+(`c/12.92` below 0.04045, else `((c+0.055)/1.055)^2.4`), weighted
+`0.2126R + 0.7152G + 0.0722B`, and the ratio is `(L_lighter + 0.05) /
+(L_darker + 0.05)`. Sanity-check any implementation against two known values:
+`#000000` on white is exactly 21.00:1, and `#767676` on white is 4.54:1 — the
+canonical "just passes AA" grey.
 
 ## Tables
 

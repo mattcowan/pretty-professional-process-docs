@@ -125,14 +125,31 @@ removes the roles and capabilities but keeps your content — see
   since approval" on later edits.
 * GitHub push queue storing queued/pushed state only — no credentials in
   WordPress.
-* Report and section type registry as the plugin's extensibility spine,
-  replacing ad-hoc registration.
 * Save-time content-quality enforcement, including accessible-table
   normalisation.
 * Abilities API integration: default-deny, read-only outline ability only.
 * Report authoring dashboard with a keyboard-operable outline reorder.
 * PHPUnit suite covering access, clients, content quality, the GitHub queue,
   the registry, reordering, requirement IDs, and sign-off.
+
+= 0.2.0 =
+Never tagged as its own release — the version constant went 0.1.0 to 0.3.0, and
+this work shipped inside 0.3.0. It is listed separately because
+`docs/rest-contract.md` attributes these additions to v0.2.0, and the REST
+contract is the version reference agents check.
+
+* Report and section type registry (`pppd_register_report_type()` /
+  `pppd_register_section_type()`) as the plugin's extensibility spine,
+  replacing ad-hoc registration. A third party can register a report type,
+  section type, and ID scheme without editing plugin core.
+* `pppd_report_type` taxonomy (`frd`, `user-access-model`, `change-order`,
+  `content-strategy`; an untermed report is an FRD) and the `pppd_client`
+  taxonomy.
+* `pppd_contract_version` on the outline response, so a client can tell which
+  REST contract it is talking to.
+* Added `_pppd_reviewed_at` (change) and `_pppd_assigned_user_ids` (report).
+* Traceability gained a `type` field/column, appended last — existing columns
+  never move.
 
 = 0.1.0 =
 * Initial release: report, section, change, and drift post types; REST

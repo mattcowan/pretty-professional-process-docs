@@ -128,7 +128,11 @@ authored *content* can still be accessibility-checked at the source level
 
 1. Fetch the rendered report page with the shared exporter (authenticated):
    `node ~/.claude/skills/shared/report-design/export-pdf.mjs <report-url> frd-report.pdf --login "$PPPD_USER:$PPPD_APP_PASS"`
-   — must print `OK: tagged PDF`.
+   — must print `OK: tagged PDF` and exit 0. The exporter verifies the page it
+   rendered before exporting, so exit 4 (bad HTTP status), 5 (landed on a login
+   page) and 6 (page isn't a report) all mean **auth or access failed, not that
+   the PDF is malformed** — never attach the output or retry with a different
+   filename. Fix the credentials or the report's client access, then re-run.
 2. Download the traceability CSV from
    `/pppd/v1/reports/{id}/traceability?format=csv`.
 3. Deliver to `...\reports\<project-slug>\<YYYY-MM-DD>-frd\`.

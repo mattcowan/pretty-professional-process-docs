@@ -41,8 +41,18 @@ const FUNCTIONS = array(
 
 $root = dirname( __DIR__ );
 
-/** Directories never scanned. */
-$skip_dirs = array( 'vendor', 'node_modules', '.git', 'tools', 'agent-layer', 'languages' );
+/** Directories never scanned. Keep tools/README.md's list in step with this. */
+$skip_dirs = array( 'vendor', 'node_modules', '.git', 'tools', 'agent-layer', 'languages', 'tests' );
+
+/**
+ * Anything that would make the POT quietly wrong.
+ *
+ * Collected rather than thrown so one run reports every problem, then exits
+ * non-zero. A silent success here means a stale POT ships.
+ *
+ * @var string[]
+ */
+$problems = array();
 
 $files = array();
 $iter  = new RecursiveIteratorIterator(
@@ -64,9 +74,41 @@ sort( $files );
 $entries = array();
 
 foreach ( $files as $path ) {
-	$rel    = str_replace( '\\', '/', substr( $path, strlen( $root ) + 1 ) );
-	$tokens = token_get_all( (string) file_get_contents( $path ) );
+	$rel = str_replace( '\\', '/', substr( $path, strlen( $root ) + 1 ) );
+
+	$source = file_get_contents( $path );
+	if ( false === $source ) {
+		// Never cast this to string. `(string) false` is '', which tokenizes to
+		// zero strings — indistinguishable from "this file had nothing to
+		// translate", while the file still counts toward the summary total.
+		$problems[] = "could not read {$rel} — its strings are missing from this POT";
+		continue;
+	}
+
+	$tokens = token_get_all( $source );
 	$count  = count( $tokens );
+
+	// Translator comments are attached by LINE, not by walking back through
+	// tokens. A backward token walk breaks on the first T_STRING or
+	// T_DOUBLE_ARROW, which drops every comment sitting above a wrapped call
+	// (`esc_html( _n( … ) )`, `sprintf( __( … ) )`) or an array value
+	// (`'label_count' => _n_noop( … )`) — i.e. exactly the annotated cases.
+	$comments_by_line = array();
+	foreach ( $tokens as $token ) {
+		if ( ! is_array( $token ) || ! in_array( $token[0], array( T_COMMENT, T_DOC_COMMENT ), true ) ) {
+			continue;
+		}
+		$text = trim( preg_replace( '#^(/\*+|//|\#)|(\*+/)$#', '', $token[1] ) ?? '' );
+		$text = trim( preg_replace( '#^\s*\*\s?#m', '', $text ) ?? '' );
+		if ( 0 !== stripos( $text, 'translators:' ) ) {
+			continue;
+		}
+		// Key on the comment's LAST line, so a multi-line comment attaches to
+		// the call that follows it rather than the one that follows its start.
+		$last_line = $token[2] + substr_count( $token[1], "\n" );
+		$comments_by_line[ $last_line ] = preg_replace( '/\s+/', ' ', $text ) ?? $text;
+	}
+	$claimed_comments = array();
 
 	for ( $i = 0; $i < $count; $i++ ) {
 		$token = $tokens[ $i ];
@@ -88,17 +130,32 @@ foreach ( $files as $path ) {
 
 		$args = collect_args( $tokens, $open );
 		if ( null === $args ) {
+			$problems[] = "{$rel}:{$token[2]}: unterminated call to {$token[1]}() — skipped";
 			continue;
 		}
 
 		list( $sing_i, $plur_i, $ctx_i, $dom_i ) = FUNCTIONS[ $token[1] ];
 
-		// Only our text domain. A non-literal domain arg is skipped, not guessed.
-		if ( ! isset( $args[ $dom_i ] ) || TEXT_DOMAIN !== $args[ $dom_i ] ) {
+		// The domain argument decides whether this string is ours. A missing or
+		// non-literal domain is reported, never guessed at — silently skipping
+		// it is how a string goes missing from the POT with no diff to explain it.
+		if ( ! array_key_exists( $dom_i, $args ) ) {
+			$problems[] = "{$rel}:{$token[2]}: {$token[1]}() has no text-domain argument — skipped";
 			continue;
 		}
-		if ( ! isset( $args[ $sing_i ] ) ) {
+		if ( null === $args[ $dom_i ] ) {
+			$problems[] = "{$rel}:{$token[2]}: {$token[1]}() has a non-literal text domain — skipped";
 			continue;
+		}
+		if ( TEXT_DOMAIN !== $args[ $dom_i ] ) {
+			continue; // Another plugin's/core's string. Correct to ignore, silently.
+		}
+		if ( ! isset( $args[ $sing_i ] ) ) {
+			$problems[] = "{$rel}:{$token[2]}: {$token[1]}() msgid is not a literal string — skipped";
+			continue;
+		}
+		if ( null !== $plur_i && ! isset( $args[ $plur_i ] ) ) {
+			$problems[] = "{$rel}:{$token[2]}: {$token[1]}() plural form is not a literal string";
 		}
 
 		$msgid  = $args[ $sing_i ];
@@ -122,7 +179,7 @@ foreach ( $files as $path ) {
 			$entries[ $key ]['plural'] = $plural;
 		}
 
-		$comment = translator_comment( $tokens, $i );
+		$comment = translator_comment( $comments_by_line, $token[2], $claimed_comments );
 		if ( null !== $comment && null === $entries[ $key ]['translator'] ) {
 			$entries[ $key ]['translator'] = $comment;
 		}
@@ -248,44 +305,94 @@ function unquote( string $raw ): string {
 	$quote = $raw[0];
 	$body  = substr( $raw, 1, -1 );
 
+	// Must be a single left-to-right pass. Sequential str_replace() is wrong
+	// here: replacing '\n' before '\\' lets the second backslash of an escaped
+	// pair be eaten as the start of a new escape, so "C:\\temp" decodes to
+	// "C:\<TAB>emp".
 	if ( "'" === $quote ) {
-		return str_replace( array( "\\'", '\\\\' ), array( "'", '\\' ), $body );
+		return preg_replace_callback(
+			'/\\\\([\\\\\'])/',
+			static function ( array $m ): string {
+				return $m[1];
+			},
+			$body
+		) ?? $body;
 	}
 
-	return str_replace(
-		array( '\\"', '\\n', '\\t', '\\r', '\\$', '\\\\' ),
-		array( '"', "\n", "\t", "\r", '$', '\\' ),
-		$body
+	$map = array(
+		'n'  => "\n",
+		't'  => "\t",
+		'r'  => "\r",
+		'v'  => "\v",
+		'f'  => "\f",
+		'e'  => "\e",
+		'"'  => '"',
+		'$'  => '$',
+		'\\' => '\\',
 	);
+
+	return preg_replace_callback(
+		'/\\\\(x[0-9A-Fa-f]{1,2}|u\{[0-9A-Fa-f]+\}|[0-7]{1,3}|.)/s',
+		static function ( array $m ) use ( $map ): string {
+			$seq = $m[1];
+			if ( isset( $map[ $seq ] ) ) {
+				return $map[ $seq ];
+			}
+			if ( 'x' === $seq[0] ) {
+				return chr( (int) hexdec( substr( $seq, 1 ) ) );
+			}
+			if ( 'u' === $seq[0] ) {
+				return mb_chr( (int) hexdec( trim( substr( $seq, 1 ), '{}' ) ), 'UTF-8' );
+			}
+			if ( 1 === preg_match( '/^[0-7]{1,3}$/', $seq ) ) {
+				return chr( (int) octdec( $seq ) );
+			}
+			// Not a recognised escape: PHP keeps the backslash verbatim.
+			return '\\' . $seq;
+		},
+		$body
+	) ?? $body;
 }
 
 /**
- * Find a `translators:` comment immediately preceding a call.
+ * Claim the `translators:` comment attached to a call, by line.
  *
- * @param array $tokens Token list.
- * @param int   $i      Index of the function-name token.
+ * gettext's convention: the comment sits on the line above the call, or on the
+ * same line. A small look-back window covers a call whose own line is a
+ * continuation. Each comment is claimed once, so one annotation can't smear
+ * across several unrelated strings.
+ *
+ * @param array<int, string> $comments_by_line Comment text keyed by its last line.
+ * @param int                $line             Line of the function-name token.
+ * @param array<int, bool>   $claimed          Lines already consumed, by reference.
  * @return string|null
  */
-function translator_comment( array $tokens, int $i ): ?string {
-	for ( $j = $i - 1; $j >= 0 && $j >= $i - 12; $j-- ) {
-		$token = $tokens[ $j ];
-		if ( ! is_array( $token ) ) {
-			continue;
+function translator_comment( array $comments_by_line, int $line, array &$claimed ): ?string {
+	for ( $l = $line; $l >= $line - 3; $l-- ) {
+		if ( isset( $comments_by_line[ $l ] ) && ! isset( $claimed[ $l ] ) ) {
+			$claimed[ $l ] = true;
+			return $comments_by_line[ $l ];
 		}
-		if ( T_WHITESPACE === $token[0] ) {
-			continue;
-		}
-		if ( T_COMMENT === $token[0] || T_DOC_COMMENT === $token[0] ) {
-			$text = trim( preg_replace( '#^(/\*+|//|\#)|(\*+/)$#', '', $token[1] ) ?? '' );
-			$text = trim( preg_replace( '#^\s*\*\s?#m', '', $text ) ?? '' );
-			if ( 0 === stripos( $text, 'translators:' ) ) {
-				return preg_replace( '/\s+/', ' ', $text ) ?? $text;
-			}
-			continue;
-		}
-		break;
 	}
 	return null;
+}
+
+/**
+ * Does this msgid carry printf placeholders?
+ *
+ * Drives the `#, php-format` flag, which is what lets `msgfmt --check-format`
+ * reject a translation that drops or reorders a placeholder. Without the flag
+ * a bad translation compiles clean and blows up at runtime in printf().
+ *
+ * @param string $msgid The string.
+ * @return bool
+ */
+function is_php_format( string $msgid ): bool {
+	// A real conversion spec, ignoring the literal '%%'.
+	return 1 === preg_match(
+		'/(?<!%)%(?:\d+\$)?[-+ 0]*(?:\d+|\*)?(?:\.\d+)?[bcdeEfFgGosuxX]/',
+		str_replace( '%%', '', $msgid )
+	);
 }
 
 /**
@@ -334,6 +441,9 @@ foreach ( $entries as $entry ) {
 	foreach ( array_unique( $entry['refs'] ) as $ref ) {
 		$out .= '#: ' . $ref . "\n";
 	}
+	if ( is_php_format( $entry['msgid'] ) || ( null !== $entry['plural'] && is_php_format( $entry['plural'] ) ) ) {
+		$out .= "#, php-format\n";
+	}
 	if ( null !== $entry['context'] ) {
 		$out .= 'msgctxt "' . po_escape( $entry['context'] ) . "\"\n";
 	}
@@ -348,15 +458,38 @@ foreach ( $entries as $entry ) {
 }
 
 $target = $root . '/languages/' . TEXT_DOMAIN . '.pot';
-if ( ! is_dir( dirname( $target ) ) ) {
-	mkdir( dirname( $target ), 0755, true );
+$rel_target = 'languages/' . TEXT_DOMAIN . '.pot';
+
+if ( ! is_dir( dirname( $target ) ) && ! mkdir( dirname( $target ), 0755, true ) && ! is_dir( dirname( $target ) ) ) {
+	fwrite( STDERR, "ERROR: could not create " . dirname( $rel_target ) . "/\n" );
+	exit( 1 );
 }
-file_put_contents( $target, $out );
+
+// Report the write by its actual result. A read-only directory, a file locked
+// by an editor, or a full disk all make this return false — announcing success
+// anyway is how a CI step ships a stale POT on a green exit code.
+$written = file_put_contents( $target, $out );
+if ( false === $written ) {
+	fwrite( STDERR, "ERROR: could not write {$rel_target} (permissions? file locked? disk full?)\n" );
+	exit( 1 );
+}
+if ( strlen( $out ) !== $written ) {
+	fwrite( STDERR, sprintf( "ERROR: short write to %s — %d of %d bytes.\n", $rel_target, $written, strlen( $out ) ) );
+	exit( 1 );
+}
 
 printf(
 	"Wrote %s — %d strings from %d files.%s",
-	'languages/' . TEXT_DOMAIN . '.pot',
+	$rel_target,
 	count( $entries ),
 	count( $files ),
 	PHP_EOL
 );
+
+if ( array() !== $problems ) {
+	fwrite( STDERR, sprintf( "%s%d problem(s) — the POT above is INCOMPLETE:%s", PHP_EOL, count( $problems ), PHP_EOL ) );
+	foreach ( $problems as $problem ) {
+		fwrite( STDERR, "  - {$problem}\n" );
+	}
+	exit( 1 );
+}

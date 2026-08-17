@@ -7,8 +7,15 @@
  *   node export-pdf.mjs <input.html | url> <output.pdf> [--login user:app_password]
  *
  * Renders via Chromium and exports with page.pdf({ tagged: true }) so the
- * semantic HTML becomes the PDF tag structure. Fails loudly if the output
- * lacks /StructTreeRoot + /Marked true.
+ * semantic HTML becomes the PDF tag structure.
+ *
+ * Two gates, and both matter. Chromium emits /Marked true + /StructTreeRoot for
+ * ANY html it renders, so the tag check alone would pass on a login screen or a
+ * 404. So the source page is verified first (HTTP status, not-a-login-page, and
+ * the report-design shape contract), and only then is the tag structure checked.
+ *
+ * Exit codes: 1 output not tagged · 2 usage · 3 playwright missing
+ *             4 bad HTTP status · 5 landed on a login page · 6 not a report
  *
  * Dependency: playwright OR playwright-core (with a system Chrome/Edge).
  * Resolved from: cwd node_modules → this directory → global npm root.
@@ -102,7 +109,17 @@ try {
 	const contextOpts = {};
 	if (login) {
 		const [user, ...rest] = login.split(':');
-		contextOpts.httpCredentials = { username: user, password: rest.join(':') };
+		// send: 'always' is REQUIRED, not a nicety. The default is 'unauthorized',
+		// which only attaches the Authorization header after a 401 + WWW-Authenticate
+		// challenge. WordPress does not challenge a front-end page — it redirects to
+		// wp-login.php — so with the default the header is never sent, the exporter
+		// renders the login screen, and (because Chromium tags any HTML it renders)
+		// the tagged-PDF check below would happily pass on it.
+		contextOpts.httpCredentials = {
+			username: user,
+			password: rest.join(':'),
+			send: 'always',
+		};
 	}
 	// Local dev sites use self-signed certs
 	contextOpts.ignoreHTTPSErrors = true;
@@ -110,7 +127,57 @@ try {
 	const context = await browser.newContext(contextOpts);
 	const page = await context.newPage();
 	await page.emulateMedia({ media: 'print' });
-	await page.goto(url, { waitUntil: 'networkidle' });
+	const response = await page.goto(url, { waitUntil: 'networkidle' });
+
+	// A PDF of an error page is still a valid tagged PDF. Verify we rendered the
+	// document we were asked for, BEFORE spending the export on it.
+	if (response && !response.ok()) {
+		await browser.close();
+		console.error(
+			`FAIL: ${url} returned HTTP ${response.status()} ${response.statusText()}.\n` +
+				'Nothing was exported. Check the URL, and if the report requires login, ' +
+				'pass --login user:app_password.'
+		);
+		process.exit(4);
+	}
+
+	const finalUrl = page.url();
+	if (/wp-login\.php|\/wp-admin\/|\/login\/?$/i.test(finalUrl)) {
+		await browser.close();
+		console.error(
+			`FAIL: ended up at a login page (${finalUrl}).\n` +
+				'The credentials were rejected or not supplied. Check PPPD_USER / ' +
+				'PPPD_APP_PASS and that the user can view this report.'
+		);
+		process.exit(5);
+	}
+
+	// Assert the report-design contract: exactly one <main>, at least one <h1>,
+	// and no login form. This is what distinguishes a report from any other page
+	// the server might have handed us (403 notice, "restricted" template, 404).
+	const shape = await page.evaluate(() => ({
+		mains: document.querySelectorAll('main').length,
+		h1s: document.querySelectorAll('h1').length,
+		loginForm: !!document.querySelector('#loginform, form[name="loginform"]'),
+		title: document.title,
+		bodyChars: (document.body?.innerText || '').trim().length,
+	}));
+
+	if (shape.loginForm || shape.mains !== 1 || shape.h1s < 1 || shape.bodyChars < 200) {
+		await browser.close();
+		console.error(
+			`FAIL: ${finalUrl} does not look like a report.\n` +
+				`  <main> elements: ${shape.mains} (expected exactly 1)\n` +
+				`  <h1> elements:   ${shape.h1s} (expected at least 1)\n` +
+				`  login form:      ${shape.loginForm}\n` +
+				`  body text:       ${shape.bodyChars} chars\n` +
+				`  page title:      ${JSON.stringify(shape.title)}\n` +
+				'Nothing was exported. A tagged PDF of an error or login page is still ' +
+				'a valid tagged PDF, so this check is what stops one being delivered as ' +
+				'an "accessible PDF".'
+		);
+		process.exit(6);
+	}
 
 	const pdfOpts = {
 		path: resolve(output),
@@ -147,4 +214,7 @@ if (!marked || !structTree) {
 	);
 	process.exit(1);
 }
-console.log(`OK: tagged PDF written to ${resolve(output)} (Marked + StructTreeRoot present)`);
+console.log(
+	`OK: tagged PDF written to ${resolve(output)} ` +
+		'(source page verified as a report; Marked + StructTreeRoot present)'
+);

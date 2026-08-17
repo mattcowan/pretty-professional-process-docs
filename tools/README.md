@@ -14,10 +14,27 @@ canonical tool and should be preferred where WP-CLI is available; this script
 exists so the POT stays regenerable without it. It tokenizes the PHP with
 `token_get_all()` (not regex), covers the full `__`/`_e`/`_x`/`_n`/`_noop`
 family plus the `esc_html_*` / `esc_attr_*` wrappers, carries `translators:`
-comments through, and skips any call whose text domain isn't this plugin's.
-`agent-layer/`, `tools/`, `tests/`, and `vendor/` are not scanned.
+comments through (attached by line, so a comment above a wrapped call such as
+`esc_html( _n( … ) )` or an array value `'x' => _n_noop( … )` still lands),
+emits `#, php-format` so `msgfmt --check-format` can validate placeholder
+integrity, and skips any call whose text domain isn't this plugin's.
+`agent-layer/`, `tools/`, `tests/`, `languages/`, `node_modules/`, and
+`vendor/` are not scanned.
 
 Run it after adding or changing any user-facing string.
+
+**It exits non-zero and names the file and line whenever the POT would be
+incomplete** — an unreadable source file, a non-literal msgid, a missing text
+domain, or a failed/short write. A green exit means the POT on disk is
+complete; treat a red one as "do not commit this POT". Verify with:
+
+```sh
+php tools/make-pot.php && msgfmt --check -o /dev/null languages/*.pot
+```
+
+Known gap versus WP-CLI: JavaScript and block-editor strings are not extracted
+— this plugin has none today (its JS ships no translatable text), but if that
+changes, switch to `wp i18n make-pot`.
 
 ## migrate-to-blocks.py
 

@@ -200,8 +200,10 @@ section bodies) before publish.
 
 1. Fetch the rendered report page with the shared exporter (authenticated):
    `node ~/.claude/skills/shared/report-design/export-pdf.mjs <report-url> content-strategy.pdf --login "$PPPD_USER:$PPPD_APP_PASS"`
-   — must print `OK: tagged PDF` (it fails loudly unless the PDF carries
-   `/StructTreeRoot` + `/Marked true`).
+   — must print `OK: tagged PDF` and exit 0. It fails loudly unless the PDF
+   carries `/StructTreeRoot` + `/Marked true`, AND unless the page it rendered
+   is actually the report: exit 4 (bad HTTP status), 5 (login page) or 6 (not a
+   report) mean auth or access failed. Fix that; never attach the output.
 2. Save the self-contained HTML alongside it. Both follow
    `../shared/report-design/report-design.md` (skip link, landmarks, one
    `<main>`, TOC, text+symbol+shape status badges, table structure, print
