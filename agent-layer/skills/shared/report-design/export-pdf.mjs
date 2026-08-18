@@ -4,7 +4,13 @@
  * Contract: report-design.md
  *
  * Usage:
- *   node export-pdf.mjs <input.html | url> <output.pdf> [--login user:app_password]
+ *   node export-pdf.mjs <input.html | url> <output.pdf> [--login user:app_password] [--insecure]
+ *
+ * --login sends a WordPress application password on every request. TLS
+ * verification is therefore left ON for anything that isn't a local dev host
+ * (localhost, 127.x, ::1, *.local, *.test, *.localhost), and credentials are
+ * refused over plain http to a remote host. --insecure overrides both,
+ * loudly.
  *
  * Renders via Chromium and exports with page.pdf({ tagged: true }) so the
  * semantic HTML becomes the PDF tag structure.
@@ -15,7 +21,8 @@
  * the report-design shape contract), and only then is the tag structure checked.
  *
  * Exit codes: 1 output not tagged · 2 usage · 3 playwright missing
- *             4 bad HTTP status · 5 landed on a login page · 6 not a report
+ *             4 unreachable or bad HTTP status · 5 landed on a login page
+ *             6 not a report · 7 refused to send credentials insecurely
  *
  * Dependency: playwright OR playwright-core (with a system Chrome/Edge).
  * Resolved from: cwd node_modules → this directory → global npm root.
@@ -29,6 +36,13 @@ import { resolve, dirname } from 'node:path';
 import { pathToFileURL, fileURLToPath } from 'node:url';
 
 const args = process.argv.slice(2);
+
+const insecureIdx = args.indexOf('--insecure');
+const insecure = insecureIdx !== -1;
+if (insecure) {
+	args.splice(insecureIdx, 1);
+}
+
 const loginIdx = args.indexOf('--login');
 let login = null;
 if (loginIdx !== -1) {
@@ -41,8 +55,29 @@ if (loginIdx !== -1) {
 const [input, output] = args;
 
 if (!input || !output) {
-	console.error('Usage: node export-pdf.mjs <input.html|url> <output.pdf> [--login user:app_password]');
+	console.error(
+		'Usage: node export-pdf.mjs <input.html|url> <output.pdf> ' +
+			'[--login user:app_password] [--insecure]'
+	);
 	process.exit(2);
+}
+
+/**
+ * Is this host a local development target?
+ *
+ * Only these get TLS verification relaxed. Everything else keeps it, because
+ * --login puts a WordPress application password in the Authorization header of
+ * the very first request (send: 'always'), and a forged certificate on a
+ * non-local host would be handed that credential.
+ */
+function isLocalHost(hostname) {
+	const h = hostname.toLowerCase().replace(/^\[|\]$/g, '');
+	return (
+		h === 'localhost' ||
+		h === '::1' ||
+		/^127\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(h) ||
+		/\.(local|test|localhost)$/.test(h)
+	);
 }
 
 /** Find playwright or playwright-core wherever it lives. */
@@ -95,13 +130,51 @@ async function launch() {
 	throw lastErr;
 }
 
-const url = /^https?:\/\//i.test(input)
-	? input
-	: pathToFileURL(resolve(input)).href;
+const isRemoteInput = /^https?:\/\//i.test(input);
+const url = isRemoteInput ? input : pathToFileURL(resolve(input)).href;
 
-if (!/^https?:\/\//i.test(input) && !existsSync(resolve(input))) {
+if (!isRemoteInput && !existsSync(resolve(input))) {
 	console.error(`Input file not found: ${input}`);
 	process.exit(2);
+}
+
+// Decide the transport-security posture BEFORE launching a browser or touching
+// the network. --login means an application password rides on every request,
+// so the two ways it can leak are handled here: an unverified certificate, and
+// plain http.
+let relaxTls = false;
+if (isRemoteInput) {
+	let target;
+	try {
+		target = new URL(url);
+	} catch {
+		console.error(`Not a valid URL: ${input}`);
+		process.exit(2);
+	}
+
+	const local = isLocalHost(target.hostname);
+
+	if (login && 'http:' === target.protocol && !local && !insecure) {
+		console.error(
+			`REFUSED: ${target.origin} is plain http, and --login would send the ` +
+				'application password across it in cleartext.\n' +
+				'Use https, or pass --insecure if you genuinely accept the risk.'
+		);
+		process.exit(7);
+	}
+
+	// Self-signed certs are normal on Local/DDEV/Valet and nowhere else.
+	relaxTls = local || insecure;
+
+	if (insecure && !local) {
+		console.error(
+			`WARNING: --insecure is set — TLS certificate verification is OFF for ` +
+				`${target.origin}.` +
+				(login ? ' An application password will be sent over that connection.' : '')
+		);
+	}
+} else {
+	relaxTls = true; // file:// input; no TLS involved.
 }
 
 const browser = await launch();
@@ -121,13 +194,33 @@ try {
 			send: 'always',
 		};
 	}
-	// Local dev sites use self-signed certs
-	contextOpts.ignoreHTTPSErrors = true;
+	// Only relaxed for local dev hosts (self-signed certs are normal there) or
+	// on an explicit --insecure. Never blanket-disabled: with send: 'always',
+	// a forged cert on a remote host would be handed the application password.
+	contextOpts.ignoreHTTPSErrors = relaxTls;
 
 	const context = await browser.newContext(contextOpts);
 	const page = await context.newPage();
 	await page.emulateMedia({ media: 'print' });
-	const response = await page.goto(url, { waitUntil: 'networkidle' });
+	let response;
+	try {
+		response = await page.goto(url, { waitUntil: 'networkidle' });
+	} catch (err) {
+		// DNS failure, refused connection, timeout, or a rejected certificate.
+		// Report it as such — letting it propagate exits 1, which this script
+		// already uses for "the PDF came out untagged", and the two need
+		// telling apart.
+		await browser.close();
+		const msg = String(err && err.message ? err.message : err).split('\n')[0];
+		console.error(
+			`FAIL: could not load ${url}\n  ${msg}\n` +
+				'Nothing was exported. If this is a certificate error on a local dev ' +
+				'site, check the hostname is one of localhost / 127.x / *.local / ' +
+				'*.test / *.localhost — TLS verification is deliberately left on ' +
+				'everywhere else.'
+		);
+		process.exit(4);
+	}
 
 	// A PDF of an error page is still a valid tagged PDF. Verify we rendered the
 	// document we were asked for, BEFORE spending the export on it.

@@ -154,7 +154,18 @@ Semantic HTML is the accessibility source; the PDF inherits it as tags.
 2. `node export-pdf.mjs <input.html|url> <output.pdf> [--login user:apppass]`
    — Chromium `page.pdf({ tagged: true, outline: true })`.
 3. The script fails loudly unless the output contains `/StructTreeRoot` and
-   `/Marked true` (tag structure present).
+   `/Marked true` (tag structure present) **and** the page it rendered was
+   actually a report. Chromium tags any HTML it renders, so the tag check
+   alone would pass on a login screen or a 404 — a "successful" accessible
+   PDF of an error page. Exit codes: `4` unreachable/bad status, `5` login
+   page, `6` not a report, `7` refused to send credentials insecurely.
+4. **Credentials and transport.** `--login` puts a WordPress application
+   password in the `Authorization` header of every request. TLS verification
+   stays ON for anything that isn't a local dev host (`localhost`, `127.x`,
+   `::1`, `*.local`, `*.test`, `*.localhost`), and credentials are refused
+   over plain `http` to a remote host. `--insecure` overrides both and prints
+   a warning — use it only when you own the risk. Never disable verification
+   globally to "make it work".
 4. Acceptance bar: screen-reader-navigable tagged PDF (headings, reading order,
    alt text, table structure). Not certified PDF/UA.
 
